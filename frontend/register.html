@@ -1,0 +1,16 @@
+<h2>Register</h2>
+
+<input id="name" placeholder="Full Name">
+<input id="email" placeholder="Email" type="email">
+<input id="password" type="password" placeholder="Password (8+ chars, upper, lower, number)">
+
+<!-- Admin is intentionally excluded — admin accounts are managed internally -->
+<select id="role">
+    <option value="supplier">Supplier</option>
+    <option value="facility">Facility</option>
+    <option value="inspector">Inspector</option>
+</select>
+
+<button onclick="register()">Register</button>
+
+<script src="js/auth.js"></script>

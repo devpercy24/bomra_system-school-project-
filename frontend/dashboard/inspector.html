@@ -1,0 +1,27 @@
+<h2>Inspector Dashboard</h2>
+
+<input id="facility_id" placeholder="Facility ID">
+<select id="status">
+    <option>passed</option>
+    <option>failed</option>
+</select>
+
+<textarea id="notes"></textarea>
+
+<button onclick="submitInspection()">Submit</button>
+
+<script>
+async function submitInspection() {
+    await fetch("http://localhost/bomra_system/api/inspector/add_inspection.php", {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+            facility_id: facility_id.value,
+            status: status.value,
+            notes: notes.value
+        })
+    });
+
+    alert("Inspection added");
+}
+</script>

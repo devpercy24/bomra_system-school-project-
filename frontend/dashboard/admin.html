@@ -1,0 +1,70 @@
+<h2>Admin Dashboard</h2>
+<button onclick="logout()">Logout</button>
+
+<button onclick="loadApps()">View Applications</button>
+<div id="apps"></div>
+
+<script src="../js/auth.js"></script>
+<script>
+// Guard: only admins may view this page
+const currentUser = guardPage('admin');
+
+async function loadApps() {
+    try {
+        const res = await fetch("http://localhost/bomra_system/api/admin/get_applications.php", {
+            credentials: "include"
+        });
+
+        const data = await res.json();
+
+        if (data.status !== "success") {
+            alert(data.message || "Failed to load applications.");
+            return;
+        }
+
+        let html = "";
+        data.data.forEach(app => {
+            const safeId   = parseInt(app.application_id, 10);
+            const safeName = document.createElement('span');
+            safeName.textContent = app.name; // XSS-safe via textContent
+            html += `
+                <div>
+                    <p>Application #${safeId} — <span id="name_${safeId}"></span></p>
+                    <button onclick="review(${safeId}, 'approved')">Approve</button>
+                    <button onclick="review(${safeId}, 'rejected')">Reject</button>
+                </div>
+            `;
+        });
+
+        document.getElementById("apps").innerHTML = html;
+
+        // Set names safely after inserting HTML to avoid XSS
+        data.data.forEach(app => {
+            const el = document.getElementById("name_" + parseInt(app.application_id, 10));
+            if (el) el.textContent = app.name;
+        });
+
+    } catch (err) {
+        alert("Network error loading applications.");
+    }
+}
+
+async function review(id, status) {
+    try {
+        const res = await fetch("http://localhost/bomra_system/api/admin/review_application.php", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ application_id: id, status: status })
+        });
+
+        const data = await res.json();
+        alert(data.status === "success" ? "Application updated." : (data.message || "Update failed."));
+
+        if (data.status === "success") loadApps();
+
+    } catch (err) {
+        alert("Network error.");
+    }
+}
+</script>

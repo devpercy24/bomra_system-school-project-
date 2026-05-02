@@ -1,0 +1,14 @@
+<h2>Facility Dashboard</h2>
+
+<button onclick="createRequest()">Request Medicine</button>
+
+<script>
+async function createRequest() {
+    await fetch("http://localhost/bomra_system/api/facility/create_request.php", {
+        method: "POST",
+        credentials: "include"
+    });
+
+    alert("Request created");
+}
+</script>

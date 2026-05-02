@@ -1,0 +1,23 @@
+<h2>Supplier Dashboard</h2>
+
+<input id="medicine_id" placeholder="Medicine ID">
+<input id="batch_number" placeholder="Batch">
+<input id="quantity" placeholder="Quantity">
+
+<button onclick="addBatch()">Submit</button>
+
+<script>
+async function addBatch() {
+    await fetch("http://localhost/bomra_system/api/supplier/add_batch.php", {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+            medicine_id: medicine_id.value,
+            batch_number: batch_number.value,
+            quantity: quantity.value
+        })
+    });
+
+    alert("Batch added");
+}
+</script>
