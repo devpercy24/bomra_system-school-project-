@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - All Licenses</title>
+</head>
+<body>
+
+    <h1>License Registry</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p><a href="manage_license.html">Issue / Renew / Suspend a License</a></p>
+
+    <div id="licenses-list">
+        <p>Loading licenses...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/admin/get_licenses.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('licenses-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No licenses found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>License Number</th><th>Holder Type</th><th>Holder ID</th><th>Status</th><th>Expires</th><th>Issued By</th><th>Issued At</th></tr>';
+                data.data.forEach(lic => {
+                    html += `<tr>
+                        <td>${lic.license_id}</td>
+                        <td>${lic.license_number}</td>
+                        <td>${lic.holder_type}</td>
+                        <td>${lic.holder_id}</td>
+                        <td>${lic.status}</td>
+                        <td>${lic.expires_at || 'N/A'}</td>
+                        <td>${lic.issued_by_name}</td>
+                        <td>${lic.issued_at}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('licenses-list').innerHTML = '<p>Failed to load licenses.</p>';
+            });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Drug Reaction Reports</title>
+</head>
+<body>
+
+    <h1>Adverse Drug Reaction Reports</h1>
+    <p><a href="../dashboard/inspector.html">Back to Dashboard</a></p>
+
+    <div id="reactions-list">
+        <p>Loading reports...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("inspector");
+        fetch('../../api/reports/drug_reactions.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('reactions-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No drug reaction reports found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>Report ID</th><th>Medicine</th><th>Manufacturer</th><th>Batch No.</th><th>Expiry</th><th>Reaction</th><th>Severity</th><th>Reported By</th><th>Reported At</th><th>Notes</th></tr>';
+                data.data.forEach(r => {
+                    html += `<tr>
+                        <td>${r.report_id}</td>
+                        <td>${r.medicine_name}</td>
+                        <td>${r.manufacturer}</td>
+                        <td>${r.batch_number}</td>
+                        <td>${r.expiry_date}</td>
+                        <td>${r.reaction}</td>
+                        <td>${r.severity}</td>
+                        <td>${r.reported_by_name}</td>
+                        <td>${r.reported_at}</td>
+                        <td>${r.notes || ''}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('reactions-list').innerHTML = '<p>Failed to load reports.</p>';
+            });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - My Stock</title>
+</head>
+<body>
+
+    <h1>My Facility Stock</h1>
+    <p><a href="../dashboard/facility.html">Back to Dashboard</a></p>
+
+    <p>
+        <strong>Expiry Status Key:</strong>
+        ok = safe |
+        expiring_soon = expires within 90 days |
+        expired = past expiry date
+    </p>
+
+    <div id="stock-list">
+        <p>Loading stock...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("facility");
+        fetch('../../api/facility/get_stock.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('stock-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No stock found for your facility.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>Medicine</th><th>Manufacturer</th><th>Supplier</th><th>Batch No.</th><th>Expiry Date</th><th>Quantity</th><th>Expiry Status</th></tr>';
+                data.data.forEach(s => {
+                    html += `<tr>
+                        <td>${s.medicine_name}</td>
+                        <td>${s.manufacturer}</td>
+                        <td>${s.supplier_name}</td>
+                        <td>${s.batch_number}</td>
+                        <td>${s.expiry_date}</td>
+                        <td>${s.quantity}</td>
+                        <td>${s.expiry_status}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('stock-list').innerHTML = '<p>Failed to load stock. Please login again.</p>';
+            });
+    </script>
+
+</body>
+</html>

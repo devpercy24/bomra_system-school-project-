@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Complete Delivery</title>
+</head>
+<body>
+
+    <h1>Complete a Delivery</h1>
+    <p><a href="../dashboard/supplier.html">Back to Dashboard</a></p>
+
+    <label for="delivery_id">Delivery ID</label><br>
+    <input type="number" id="delivery_id" min="1" required><br>
+    <small>Enter the Delivery ID you wish to mark as completed.</small><br><br>
+
+    <button onclick="completeDelivery()">Complete Delivery</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function completeDelivery() {
+        const user = guardPage('supplier');
+        if (!user) return;
+        const delivery_id = parseInt(document.getElementById('delivery_id').value);
+        if (!delivery_id) { alert('Delivery ID is required.'); return; }
+        try {
+            const data = await apiPost('api/supplier/complete_delivery.php', { delivery_id });
+            alert(data.message || (data.status === 'success' ? 'Delivery completed.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

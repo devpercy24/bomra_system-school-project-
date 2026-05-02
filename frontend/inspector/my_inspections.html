@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - My Inspections</title>
+</head>
+<body>
+
+    <h1>My Inspection Records</h1>
+    <p><a href="../dashboard/inspector.html">Back to Dashboard</a></p>
+
+    <div id="inspections-list">
+        <p>Loading inspections...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("inspector");
+        fetch('../../api/inspector/get_inspections.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('inspections-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No inspection records found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Facility</th><th>Status</th><th>Scheduled Date</th><th>Recorded At</th><th>Notes</th></tr>';
+                data.data.forEach(i => {
+                    html += `<tr>
+                        <td>${i.inspection_id}</td>
+                        <td>${i.facility_name}</td>
+                        <td>${i.status}</td>
+                        <td>${i.scheduled_date || 'N/A'}</td>
+                        <td>${i.inspected_at}</td>
+                        <td>${i.notes || ''}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('inspections-list').innerHTML = '<p>Failed to load inspections.</p>';
+            });
+    </script>
+
+</body>
+</html>

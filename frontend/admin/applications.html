@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - All Applications</title>
+</head>
+<body>
+
+    <h1>Medicine Registration Applications</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+
+    <p>This page loads all submitted medicine registration applications from the backend.</p>
+
+    <!-- Results will be loaded here by JavaScript -->
+    <div id="applications-list">
+        <p>Loading applications...</p>
+    </div>
+
+    <hr>
+    <h2>Actions</h2>
+    <ul>
+        <li><a href="review_application.html">Review an Application</a></li>
+        <li><a href="issue_certificate.html">Issue a Certificate</a></li>
+    </ul>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/admin/get_applications.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('applications-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No applications found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>ID</th><th>Medicine</th><th>Manufacturer</th><th>Batch No.</th><th>Expiry Date</th><th>Quantity</th><th>Supplier</th><th>Submitted By</th><th>Status</th><th>Review Date</th></tr>';
+                data.data.forEach(app => {
+                    html += `<tr>
+                        <td>${app.application_id}</td>
+                        <td>${app.medicine_name}</td>
+                        <td>${app.manufacturer}</td>
+                        <td>${app.batch_number}</td>
+                        <td>${app.expiry_date}</td>
+                        <td>${app.quantity}</td>
+                        <td>${app.supplier_name}</td>
+                        <td>${app.submitter_name}</td>
+                        <td>${app.status}</td>
+                        <td>${app.review_date || 'Not yet reviewed'}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('applications-list').innerHTML = '<p>Failed to load applications. Please login again.</p>';
+            });
+    </script>
+
+</body>
+</html>

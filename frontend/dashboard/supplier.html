@@ -1,23 +1,30 @@
-<h2>Supplier Dashboard</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Supplier Dashboard</title>
+</head>
+<body>
 
-<input id="medicine_id" placeholder="Medicine ID">
-<input id="batch_number" placeholder="Batch">
-<input id="quantity" placeholder="Quantity">
+    <h1>Supplier Dashboard</h1>
+    <p>Welcome, Supplier.</p>
+    <p><a onclick="logout(); return false;" href="#">Logout</a></p>
 
-<button onclick="addBatch()">Submit</button>
+    <hr>
 
-<script>
-async function addBatch() {
-    await fetch("http://localhost/bomra_system/api/supplier/add_batch.php", {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify({
-            medicine_id: medicine_id.value,
-            batch_number: batch_number.value,
-            quantity: quantity.value
-        })
-    });
+    <h2>Medicine Registration</h2>
+    <ul>
+        <li><a href="../supplier/add_batch.html">Add a Medicine Batch</a></li>
+        <li><a href="../supplier/submit_application.html">Submit Registration Application</a></li>
+    </ul>
 
-    alert("Batch added");
-}
-</script>
+    <h2>Deliveries</h2>
+    <ul>
+        <li><a href="../supplier/create_delivery.html">Create a Delivery</a></li>
+        <li><a href="../supplier/add_delivery_item.html">Add Item to Delivery</a></li>
+        <li><a href="../supplier/complete_delivery.html">Complete a Delivery</a></li>
+    </ul>
+
+<script src="../js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Add Delivery Item</title>
+</head>
+<body>
+
+    <h1>Add Item to Delivery</h1>
+    <p><a href="../dashboard/supplier.html">Back to Dashboard</a></p>
+
+    <label for="delivery_id">Delivery ID</label><br>
+    <input type="number" id="delivery_id" min="1" required><br>
+    <small>Enter the Delivery ID created in the previous step.</small><br><br>
+
+    <label for="batch_id">Batch ID</label><br>
+    <input type="number" id="batch_id" min="1" required><br><br>
+
+    <label for="quantity">Quantity</label><br>
+    <input type="number" id="quantity" min="1" required><br><br>
+
+    <button onclick="addItem()">Add Item</button>
+
+    <hr>
+    <p>You can add multiple items. When done, go to <a href="complete_delivery.html">Complete the Delivery</a>.</p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function addItem() {
+        const user = guardPage('supplier');
+        if (!user) return;
+        const delivery_id = parseInt(document.getElementById('delivery_id').value);
+        const batch_id    = parseInt(document.getElementById('batch_id').value);
+        const quantity    = parseInt(document.getElementById('quantity').value);
+        if (!delivery_id || !batch_id || !quantity) { alert('All fields are required.'); return; }
+        try {
+            const data = await apiPost('api/supplier/add_delivery_item.php', { delivery_id, batch_id, quantity });
+            alert(data.message || (data.status === 'success' ? 'Item added.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

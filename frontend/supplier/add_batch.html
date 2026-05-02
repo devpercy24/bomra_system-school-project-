@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Add Medicine Batch</title>
+</head>
+<body>
+
+    <h1>Add a Medicine Batch</h1>
+    <p><a href="../dashboard/supplier.html">Back to Dashboard</a></p>
+
+    <label for="medicine_name">Medicine Name</label><br>
+    <input type="text" id="medicine_name" required placeholder="e.g. Paracetamol 500mg"><br><br>
+
+    <label for="manufacturer">Manufacturer</label><br>
+    <input type="text" id="manufacturer" required placeholder="e.g. PharmaCorp Ltd"><br><br>
+
+    <label for="batch_number">Batch Number</label><br>
+    <input type="text" id="batch_number" required placeholder="e.g. PC-2025-001"><br><br>
+
+    <label for="expiry_date">Expiry Date</label><br>
+    <input type="date" id="expiry_date" required><br><br>
+
+    <label for="quantity">Quantity (units)</label><br>
+    <input type="number" id="quantity" min="1" required><br><br>
+
+    <button onclick="addBatch()">Add Batch</button>
+
+    <hr>
+    <p>After adding a batch, go to <a href="submit_application.html">Submit Registration Application</a> to register it with BoMRA.</p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function addBatch() {
+        const user = guardPage('supplier');
+        if (!user) return;
+        const medicine_name = document.getElementById('medicine_name').value.trim();
+        const manufacturer  = document.getElementById('manufacturer').value.trim();
+        const batch_number  = document.getElementById('batch_number').value.trim();
+        const expiry_date   = document.getElementById('expiry_date').value;
+        const quantity      = parseInt(document.getElementById('quantity').value);
+        if (!medicine_name || !manufacturer || !batch_number || !expiry_date || !quantity) {
+            alert('All fields are required.'); return;
+        }
+        try {
+            const data = await apiPost('api/supplier/add_batch.php', { medicine_name, manufacturer, batch_number, expiry_date, quantity });
+            if (data.status === 'success') {
+                alert('Batch added successfully. Batch ID: ' + (data.batch_id || ''));
+            } else {
+                alert(data.message || 'Failed to add batch.');
+            }
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

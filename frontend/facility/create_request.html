@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Create Supply Request</title>
+</head>
+<body>
+
+    <h1>Create a Supply Request</h1>
+    <p><a href="../dashboard/facility.html">Back to Dashboard</a></p>
+
+    <p>Submit a supply request so that a supplier can prepare and deliver medicines to your facility.</p>
+
+    <p>Your facility account is linked automatically. Click the button below to submit a new supply request.</p>
+
+    <button onclick="createRequest()">Submit Supply Request</button>
+
+    <hr>
+    <p>After submitting, share the Request ID with your supplier so they can create a delivery.</p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function createRequest() {
+        const user = guardPage('facility');
+        if (!user) return;
+        try {
+            const data = await apiPost('api/facility/create_request.php', {});
+            if (data.status === 'success') {
+                alert('Supply request created. Request ID: ' + (data.request_id || ''));
+            } else {
+                alert(data.message || 'Failed.');
+            }
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

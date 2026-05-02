@@ -38,8 +38,17 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// ─── Password strength ────────────────────────────────────────────────────────
-if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/', $password)) {
+// ─── Password strength + no emojis / non-ASCII ───────────────────────────────
+// Allow only printable ASCII (0x20-0x7E). Rejects emojis and Unicode outside that range.
+if (!preg_match('/^[\x20-\x7E]+$/', $password)) {
+    http_response_code(400);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Password must contain only standard characters (no emojis or special Unicode)"
+    ]);
+    exit;
+}
+if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()\-_=+\[\]{};:\'",.<>?\/\\\\|`~]{8,}$/', $password)) {
     http_response_code(400);
     echo json_encode([
         "status"  => "error",

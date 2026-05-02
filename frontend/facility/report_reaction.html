@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Report Drug Reaction</title>
+</head>
+<body>
+
+    <h1>Report an Adverse Drug Reaction</h1>
+    <p><a href="../dashboard/facility.html">Back to Dashboard</a></p>
+
+    <label for="batch_id">Batch ID</label><br>
+    <input type="number" id="batch_id" min="1" required><br>
+    <small>Enter the Batch ID of the medicine that caused the reaction.</small><br><br>
+
+    <label for="reaction">Reaction Observed</label><br>
+    <textarea id="reaction" rows="4" cols="50" required placeholder="Describe the adverse reaction observed"></textarea><br><br>
+
+    <label for="severity">Severity</label><br>
+    <select id="severity" required>
+        <option value="">-- Select severity --</option>
+        <option value="mild">Mild</option>
+        <option value="moderate">Moderate</option>
+        <option value="severe">Severe</option>
+    </select><br><br>
+
+    <label for="notes">Additional Notes</label><br>
+    <textarea id="notes" rows="3" cols="50" placeholder="Any additional information (optional)"></textarea><br><br>
+
+    <button onclick="submitReport()">Submit Report</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function submitReport() {
+        const user = guardPage('facility');
+        if (!user) return;
+        const batch_id = parseInt(document.getElementById('batch_id').value);
+        const reaction = document.getElementById('reaction').value.trim();
+        const severity = document.getElementById('severity').value;
+        const notes    = document.getElementById('notes').value.trim();
+        if (!batch_id || !reaction || !severity) { alert('Batch ID, reaction description, and severity are required.'); return; }
+        try {
+            const data = await apiPost('api/reports/drug_reactions.php', { batch_id, reaction, severity, notes });
+            alert(data.message || (data.status === 'success' ? 'Report submitted.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

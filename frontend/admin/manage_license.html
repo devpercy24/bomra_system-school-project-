@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Manage License</title>
+</head>
+<body>
+
+    <h1>Manage License</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p><a href="licenses.html">View All Licenses</a></p>
+
+    <hr>
+
+    <h2>Issue a New License</h2>
+    <select id="holder_type" required>
+        <option value="">-- Select --</option>
+        <option value="facility">Facility / Pharmacy</option>
+        <option value="supplier">Supplier</option>
+    </select><br><br>
+    <input type="number" id="holder_id" min="1" placeholder="Holder ID (Facility or Supplier ID)"><br><br>
+    <input type="date" id="expires_at_issue"><br><br>
+    <button onclick="issueLicense()">Issue License</button>
+
+    <hr>
+
+    <h2>Renew an Existing License</h2>
+    <input type="number" id="license_id_renew" min="1" placeholder="License ID"><br><br>
+    <input type="date" id="expires_at_renew"><br><br>
+    <button onclick="renewLicense()">Renew License</button>
+
+    <hr>
+
+    <h2>Suspend a License</h2>
+    <input type="number" id="license_id_suspend" min="1" placeholder="License ID"><br><br>
+    <button onclick="suspendLicense()">Suspend License</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function issueLicense() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const holder_type = document.getElementById('holder_type').value;
+        const holder_id   = parseInt(document.getElementById('holder_id').value);
+        const expires_at  = document.getElementById('expires_at_issue').value;
+        if (!holder_type || !holder_id) { alert('Holder type and ID are required.'); return; }
+        try {
+            const data = await apiPost('api/admin/manage_license.php', { action: 'issue', holder_type, holder_id, expires_at });
+            alert(data.message || (data.status === 'success' ? 'License issued.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    async function renewLicense() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const license_id = parseInt(document.getElementById('license_id_renew').value);
+        const expires_at = document.getElementById('expires_at_renew').value;
+        if (!license_id || !expires_at) { alert('License ID and new expiry date are required.'); return; }
+        try {
+            const data = await apiPost('api/admin/manage_license.php', { action: 'renew', license_id, expires_at });
+            alert(data.message || (data.status === 'success' ? 'License renewed.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    async function suspendLicense() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const license_id = parseInt(document.getElementById('license_id_suspend').value);
+        if (!license_id) { alert('License ID is required.'); return; }
+        try {
+            const data = await apiPost('api/admin/manage_license.php', { action: 'suspend', license_id });
+            alert(data.message || (data.status === 'success' ? 'License suspended.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

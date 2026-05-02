@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Record Inspection</title>
+</head>
+<body>
+
+    <h1>Record or Schedule a Pharmacy Inspection</h1>
+    <p><a href="../dashboard/inspector.html">Back to Dashboard</a></p>
+
+    <label for="facility_id">Facility ID</label><br>
+    <input type="number" id="facility_id" min="1" required><br>
+    <small>Enter the ID of the pharmacy or facility being inspected.</small><br><br>
+
+    <label for="status">Inspection Status</label><br>
+    <select id="status" required>
+        <option value="">-- Select status --</option>
+        <option value="scheduled">Scheduled (upcoming)</option>
+        <option value="passed">Passed</option>
+        <option value="failed">Failed</option>
+    </select><br><br>
+
+    <label for="scheduled_date">Scheduled Date (required if status is Scheduled)</label><br>
+    <input type="date" id="scheduled_date"><br><br>
+
+    <label for="notes">Inspection Notes / Findings</label><br>
+    <textarea id="notes" rows="5" cols="50" placeholder="Record your findings or reason for the result"></textarea><br><br>
+
+    <button onclick="addInspection()">Submit Inspection Record</button>
+
+    <hr>
+    <p><a href="my_inspections.html">View My Inspection History</a></p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function addInspection() {
+        const user = guardPage('inspector');
+        if (!user) return;
+        const facility_id     = parseInt(document.getElementById('facility_id').value);
+        const status          = document.getElementById('status').value;
+        const scheduled_date  = document.getElementById('scheduled_date').value;
+        const notes           = document.getElementById('notes').value.trim();
+        if (!facility_id || !status) { alert('Facility ID and status are required.'); return; }
+        if (status === 'scheduled' && !scheduled_date) { alert('Scheduled date is required for a scheduled inspection.'); return; }
+        try {
+            const data = await apiPost('api/inspector/add_inspection.php', { facility_id, status, scheduled_date, notes });
+            alert(data.message || (data.status === 'success' ? 'Inspection recorded.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

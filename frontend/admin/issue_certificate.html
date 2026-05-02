@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Issue Certificate</title>
+</head>
+<body>
+
+    <h1>Issue a Medicine Certificate</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p>A certificate can only be issued for a batch that has an approved application.</p>
+
+    <label for="batch_id">Batch ID</label><br>
+    <input type="number" id="batch_id" name="batch_id" min="1" required><br>
+    <small>Enter the Batch ID of the approved medicine batch.</small><br><br>
+
+    <button onclick="issueCert()">Issue Certificate</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function issueCert() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const batch_id = parseInt(document.getElementById('batch_id').value);
+        if (!batch_id) { alert('Batch ID is required.'); return; }
+        try {
+            const data = await apiPost('api/admin/issue_certificate.php', { batch_id });
+            alert(data.message || (data.status === 'success' ? 'Certificate issued.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

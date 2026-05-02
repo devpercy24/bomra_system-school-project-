@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Summary Report</title>
+</head>
+<body>
+
+    <h1>System Summary Report</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+
+    <div id="summary">
+        <p>Loading summary...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/reports/statistics.php?type=summary', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('summary');
+                if (data.status !== 'success') {
+                    div.innerHTML = '<p>Failed to load report.</p>';
+                    return;
+                }
+                const s = data.data;
+                div.innerHTML = `
+                    <h2>Users</h2>
+                    <p>Total Users: ${s.total_users}</p>
+                    <p>Total Suppliers: ${s.total_suppliers}</p>
+                    <p>Total Facilities: ${s.total_facilities}</p>
+
+                    <h2>Medicine Applications</h2>
+                    <p>Pending: ${s.pending_apps}</p>
+                    <p>Approved: ${s.approved_apps}</p>
+                    <p>Rejected: ${s.rejected_apps}</p>
+
+                    <h2>Inspections</h2>
+                    <p>Total Inspections: ${s.total_inspections}</p>
+                    <p>Failed Inspections: ${s.failed_inspections}</p>
+
+                    <h2>Licenses</h2>
+                    <p>Active Licenses: ${s.active_licenses}</p>
+
+                    <h2>Safety</h2>
+                    <p>Drug Reaction Reports: ${s.drug_reactions}</p>
+                    <p>Expired Stock Batches Still in Inventory: ${s.expired_stock_batches}</p>
+                `;
+            })
+            .catch(() => {
+                document.getElementById('summary').innerHTML = '<p>Error loading report.</p>';
+            });
+    </script>
+
+</body>
+</html>

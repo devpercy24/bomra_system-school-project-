@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Expired Medicines Report</title>
+</head>
+<body>
+
+    <h1>Expired Medicines in Stock</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+
+    <div id="expired-list">
+        <p>Loading...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/reports/statistics.php?type=expired_medicines', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('expired-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No expired medicines found in stock.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>Medicine</th><th>Manufacturer</th><th>Batch No.</th><th>Expiry Date</th><th>Supplier</th><th>Stock Qty</th></tr>';
+                data.data.forEach(m => {
+                    html += `<tr>
+                        <td>${m.medicine_name}</td>
+                        <td>${m.manufacturer}</td>
+                        <td>${m.batch_number}</td>
+                        <td>${m.expiry_date}</td>
+                        <td>${m.supplier_name}</td>
+                        <td>${m.stock_qty}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('expired-list').innerHTML = '<p>Failed to load report.</p>';
+            });
+    </script>
+
+</body>
+</html>

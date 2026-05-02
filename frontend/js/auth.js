@@ -1,3 +1,13 @@
+// Password regex: 8+ chars, uppercase, lowercase, digit, NO emojis or non-ASCII
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()\-_=+\[\]{};:'",.<>?/\\|`~]{8,}$/;
+
+function validatePassword(password) {
+    if (!PASSWORD_REGEX.test(password)) {
+        return "Password must be at least 8 characters with uppercase, lowercase, and a number. Emojis and non-standard characters are not allowed.";
+    }
+    return null;
+}
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 async function login() {
   const email    = document.getElementById("email").value.trim();
@@ -19,7 +29,6 @@ async function login() {
     const data = await res.json();
 
     if (data.status === "success") {
-      // Store only non-sensitive display info — never store passwords or full user objects
       const { user_id, name, role } = data.data;
       sessionStorage.setItem("user", JSON.stringify({ user_id, name, role }));
 
@@ -51,7 +60,6 @@ async function register() {
   const password = document.getElementById("password").value;
   const role     = document.getElementById("role").value;
 
-  // Client-side guard: admin role is not selectable, but double-check
   const allowed = ["supplier", "facility", "inspector"];
   if (!allowed.includes(role)) {
     alert("Invalid role selected.");
@@ -60,6 +68,12 @@ async function register() {
 
   if (!name || !email || !password) {
     alert("All fields are required.");
+    return;
+  }
+
+  const pwError = validatePassword(password);
+  if (pwError) {
+    alert(pwError);
     return;
   }
 
@@ -106,4 +120,16 @@ function guardPage(requiredRole) {
     return null;
   }
   return user;
+}
+
+// ─── Generic fetch helper (JSON POST to API) ─────────────────────────────────
+// Resolves relative to frontend/<role>/ subfolder — "../api/..." goes up to frontend/
+async function apiPost(url, body) {
+  const res = await fetch("../../" + url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
 }

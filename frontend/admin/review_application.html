@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Review Application</title>
+</head>
+<body>
+
+    <h1>Review a Medicine Registration Application</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p><a href="applications.html">View All Applications</a></p>
+
+    <label for="application_id">Application ID</label><br>
+    <input type="number" id="application_id" name="application_id" min="1" required><br><br>
+
+    <label for="status">Decision</label><br>
+    <select id="status" name="status" required>
+        <option value="">-- Select decision --</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+    </select><br><br>
+
+    <label for="notes">Review Notes</label><br>
+    <textarea id="notes" name="notes" rows="4" cols="50" placeholder="Enter notes about your decision (optional)"></textarea><br><br>
+
+    <button onclick="submitReview()">Submit Review</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function submitReview() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const application_id = parseInt(document.getElementById('application_id').value);
+        const status = document.getElementById('status').value;
+        const notes  = document.getElementById('notes').value.trim();
+        if (!application_id || !status) { alert('Application ID and decision are required.'); return; }
+        try {
+            const data = await apiPost('api/admin/review_application.php', { application_id, status, notes });
+            alert(data.message || (data.status === 'success' ? 'Review submitted.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

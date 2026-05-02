@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - All Users</title>
+</head>
+<body>
+
+    <h1>All Registered Users</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p><a href="change_role.html">Change a User Role</a></p>
+
+    <div id="users-list">
+        <p>Loading users...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/admin/manage_users.php', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('users-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No users found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>User ID</th><th>Name</th><th>Email</th><th>Role</th><th>Registered</th></tr>';
+                data.data.forEach(u => {
+                    html += `<tr>
+                        <td>${u.user_id}</td>
+                        <td>${u.name}</td>
+                        <td>${u.email}</td>
+                        <td>${u.role}</td>
+                        <td>${u.created_at}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('users-list').innerHTML = '<p>Failed to load users.</p>';
+            });
+    </script>
+
+</body>
+</html>

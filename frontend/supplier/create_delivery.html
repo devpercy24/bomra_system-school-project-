@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Create Delivery</title>
+</head>
+<body>
+
+    <h1>Create a Delivery</h1>
+    <p><a href="../dashboard/supplier.html">Back to Dashboard</a></p>
+
+    <label for="request_id">Request ID</label><br>
+    <input type="number" id="request_id" min="1" required><br>
+    <small>Enter the Request ID from the facility that placed the supply request.</small><br><br>
+
+    <button onclick="createDelivery()">Create Delivery</button>
+
+    <hr>
+    <p>After creating a delivery, go to <a href="add_delivery_item.html">Add Items to Delivery</a>, then <a href="complete_delivery.html">Complete the Delivery</a>.</p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function createDelivery() {
+        const user = guardPage('supplier');
+        if (!user) return;
+        const request_id = parseInt(document.getElementById('request_id').value);
+        if (!request_id) { alert('Request ID is required.'); return; }
+        try {
+            const data = await apiPost('api/supplier/create_delivery.php', { request_id });
+            if (data.status === 'success') {
+                alert('Delivery created. Delivery ID: ' + (data.delivery_id || ''));
+            } else {
+                alert(data.message || 'Failed.');
+            }
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

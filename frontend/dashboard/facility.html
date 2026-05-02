@@ -1,14 +1,32 @@
-<h2>Facility Dashboard</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Facility Dashboard</title>
+</head>
+<body>
 
-<button onclick="createRequest()">Request Medicine</button>
+    <h1>Facility / Pharmacy Dashboard</h1>
+    <p>Welcome, Facility.</p>
+    <p><a onclick="logout(); return false;" href="#">Logout</a></p>
 
-<script>
-async function createRequest() {
-    await fetch("http://localhost/bomra_system/api/facility/create_request.php", {
-        method: "POST",
-        credentials: "include"
-    });
+    <hr>
 
-    alert("Request created");
-}
-</script>
+    <h2>Supply Requests</h2>
+    <ul>
+        <li><a href="../facility/create_request.html">Create a Supply Request</a></li>
+    </ul>
+
+    <h2>Stock Monitoring</h2>
+    <ul>
+        <li><a href="../facility/view_stock.html">View My Stock</a></li>
+    </ul>
+
+    <h2>Report an Adverse Drug Reaction</h2>
+    <ul>
+        <li><a href="../facility/report_reaction.html">Submit a Drug Reaction Report</a></li>
+    </ul>
+
+<script src="../js/auth.js"></script>
+</body>
+</html>

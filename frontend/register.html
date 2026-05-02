@@ -1,16 +1,39 @@
-<h2>Register</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Register</title>
+</head>
+<body>
 
-<input id="name" placeholder="Full Name">
-<input id="email" placeholder="Email" type="email">
-<input id="password" type="password" placeholder="Password (8+ chars, upper, lower, number)">
+    <h1>Create a BoMRA Account</h1>
+    <p><a href="index.html">Back to Home</a></p>
 
-<!-- Admin is intentionally excluded — admin accounts are managed internally -->
-<select id="role">
-    <option value="supplier">Supplier</option>
-    <option value="facility">Facility</option>
-    <option value="inspector">Inspector</option>
-</select>
+    <label for="name">Full Name / Organisation Name</label><br>
+    <input type="text" id="name" name="name" required><br><br>
 
-<button onclick="register()">Register</button>
+    <label for="email">Email Address</label><br>
+    <input type="email" id="email" name="email" required><br><br>
 
-<script src="js/auth.js"></script>
+    <label for="password">Password</label><br>
+    <input type="password" id="password" name="password" required><br>
+    <small>Minimum 8 characters. Must include uppercase, lowercase and a number. No special characters like emojis.</small><br><br>
+
+    <label for="role">Account Type</label><br>
+    <select id="role" name="role" required>
+        <option value="">-- Select your role --</option>
+        <option value="supplier">Supplier</option>
+        <option value="facility">Facility / Pharmacy</option>
+        <option value="inspector">Inspector</option>
+    </select><br>
+    <small>Admin accounts are not available for self-registration.</small><br><br>
+
+    <button onclick="register()">Create Account</button>
+
+    <hr>
+    <p>Already have an account? <a href="login.html">Login here</a></p>
+
+    <script src="js/auth.js"></script>
+
+</body>
+</html>

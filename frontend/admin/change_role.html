@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Change User Role</title>
+</head>
+<body>
+
+    <h1>Change User Role</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+    <p><a href="users.html">View All Users</a></p>
+
+    <label for="user_id">User ID</label><br>
+    <input type="number" id="user_id" name="user_id" min="1" required><br>
+    <small>Find the User ID on the users list page.</small><br><br>
+
+    <label for="role">New Role</label><br>
+    <select id="role" name="role" required>
+        <option value="">-- Select new role --</option>
+        <option value="supplier">Supplier</option>
+        <option value="facility">Facility / Pharmacy</option>
+        <option value="inspector">Inspector</option>
+    </select><br>
+    <small>Admin roles cannot be assigned through this form.</small><br><br>
+
+    <button onclick="changeRole()">Update Role</button>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function changeRole() {
+        const user = guardPage('admin');
+        if (!user) return;
+        const user_id = parseInt(document.getElementById('user_id').value);
+        const role    = document.getElementById('role').value;
+        if (!user_id || !role) { alert('All fields are required.'); return; }
+        try {
+            const data = await apiPost('api/admin/manage_users.php', { action: 'change_role', user_id, role });
+            alert(data.message || (data.status === 'success' ? 'Role updated.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

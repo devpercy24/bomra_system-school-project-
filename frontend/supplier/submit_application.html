@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Submit Registration Application</title>
+</head>
+<body>
+
+    <h1>Submit Medicine Registration Application</h1>
+    <p><a href="../dashboard/supplier.html">Back to Dashboard</a></p>
+
+    <label for="batch_id">Batch ID</label><br>
+    <input type="number" id="batch_id" min="1" required><br>
+    <small>Enter the Batch ID returned when you added the medicine batch.</small><br><br>
+
+    <button onclick="submitApp()">Submit Application</button>
+
+    <hr>
+    <p>Have not added your batch yet? <a href="add_batch.html">Add a Medicine Batch first</a></p>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    async function submitApp() {
+        const user = guardPage('supplier');
+        if (!user) return;
+        const batch_id = parseInt(document.getElementById('batch_id').value);
+        if (!batch_id) { alert('Batch ID is required.'); return; }
+        try {
+            const data = await apiPost('api/supplier/submit_application.php', { batch_id });
+            alert(data.message || (data.status === 'success' ? 'Application submitted.' : 'Failed.'));
+        } catch(e) { alert('Network error.'); }
+    }
+    </script>
+
+</body>
+</html>

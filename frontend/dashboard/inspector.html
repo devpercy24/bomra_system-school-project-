@@ -1,27 +1,28 @@
-<h2>Inspector Dashboard</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Inspector Dashboard</title>
+</head>
+<body>
 
-<input id="facility_id" placeholder="Facility ID">
-<select id="status">
-    <option>passed</option>
-    <option>failed</option>
-</select>
+    <h1>Inspector Dashboard</h1>
+    <p>Welcome, Inspector.</p>
+    <p><a onclick="logout(); return false;" href="#">Logout</a></p>
 
-<textarea id="notes"></textarea>
+    <hr>
 
-<button onclick="submitInspection()">Submit</button>
+    <h2>Inspections</h2>
+    <ul>
+        <li><a href="../inspector/add_inspection.html">Record / Schedule an Inspection</a></li>
+        <li><a href="../inspector/my_inspections.html">View My Inspections</a></li>
+    </ul>
 
-<script>
-async function submitInspection() {
-    await fetch("http://localhost/bomra_system/api/inspector/add_inspection.php", {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify({
-            facility_id: facility_id.value,
-            status: status.value,
-            notes: notes.value
-        })
-    });
+    <h2>Drug Reaction Reports</h2>
+    <ul>
+        <li><a href="../inspector/view_reactions.html">View Adverse Drug Reaction Reports</a></li>
+    </ul>
 
-    alert("Inspection added");
-}
-</script>
+<script src="../js/auth.js"></script>
+</body>
+</html>

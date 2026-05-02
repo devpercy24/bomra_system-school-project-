@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Drug Reaction Patterns</title>
+</head>
+<body>
+
+    <h1>Adverse Drug Reaction Patterns</h1>
+    <p><a href="../dashboard/admin.html">Back to Dashboard</a></p>
+
+    <div id="reactions-list">
+        <p>Loading...</p>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+    guardPage("admin");
+        fetch('../../api/reports/statistics.php?type=drug_reactions', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const div = document.getElementById('reactions-list');
+                if (data.status !== 'success' || data.data.length === 0) {
+                    div.innerHTML = '<p>No drug reaction reports found.</p>';
+                    return;
+                }
+                let html = '<table border="1" cellpadding="5"><tr><th>Medicine</th><th>Severity</th><th>Number of Reports</th><th>Reported Reactions</th></tr>';
+                data.data.forEach(r => {
+                    html += `<tr>
+                        <td>${r.medicine_name}</td>
+                        <td>${r.severity}</td>
+                        <td>${r.report_count}</td>
+                        <td>${r.reactions}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('reactions-list').innerHTML = '<p>Failed to load report.</p>';
+            });
+    </script>
+
+</body>
+</html>

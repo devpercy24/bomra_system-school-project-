@@ -1,8 +1,26 @@
-<h2>Login</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoMRA - Login</title>
+</head>
+<body>
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+    <h1>BoMRA System Login</h1>
+    <p><a href="index.html">Back to Home</a></p>
 
-<button onclick="login()">Login</button>
+    <label for="email">Email Address</label><br>
+    <input type="email" id="email" name="email" required><br><br>
 
-<script src="js/auth.js"></script>
+    <label for="password">Password</label><br>
+    <input type="password" id="password" name="password" required><br><br>
+
+    <button onclick="login()">Login</button>
+
+    <hr>
+    <p>Don't have an account? <a href="register.html">Register here</a></p>
+
+    <script src="js/auth.js"></script>
+
+</body>
+</html>
