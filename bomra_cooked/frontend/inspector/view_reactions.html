@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Drug Reaction Reports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/inspector.html'">Back to Dashboard</button>
+    <h1>Adverse Drug Reaction Reports</h1>
+  </div>
+  <div id="reactions-list" class="table-wrap"><p class="state-msg">Loading reports...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("inspector");
+apiGet('api/reports/drug_reactions.php')
+  .then(data => {
+    const div = document.getElementById('reactions-list');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No drug reaction reports found.</p>'; return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>Report ID</th><th>Medicine</th><th>Manufacturer</th><th>Batch No.</th><th>Expiry</th><th>Reaction</th><th>Severity</th><th>Reported By</th><th>Reported At</th><th>Notes</th></tr></thead><tbody>';
+    data.data.forEach(r => {
+      html += `<tr><td>${r.report_id}</td><td>${r.medicine_name}</td><td>${r.manufacturer}</td><td>${r.batch_number}</td><td>${r.expiry_date}</td><td>${r.reaction}</td><td><span class="badge badge-${r.severity}">${r.severity}</span></td><td>${r.reported_by_name}</td><td>${r.reported_at}</td><td>${r.notes || ''}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  })
+  .catch(() => { document.getElementById('reactions-list').innerHTML = '<p class="state-msg">Failed to load reports.</p>'; });
+</script>
+</body>
+</html>

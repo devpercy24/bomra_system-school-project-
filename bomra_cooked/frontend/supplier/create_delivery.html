@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Create Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Create a Delivery</h1>
+  </div>
+  <div class="page-desc">
+    Select the supply request from the dropdown or enter the Request ID provided by the facility. Once created you will receive a <strong>Delivery ID</strong> — save it to add items and complete the delivery.
+    <p><strong>Workflow:</strong> Create delivery &rarr; Add items &rarr; Complete delivery</p>
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="request_select">Select Open Request</label>
+      <select id="request_select" onchange="syncRequestId()">
+        <option value="">-- Loading open requests... --</option>
+      </select>
+      <small>Open supply requests from facilities. Select one or enter the ID manually below.</small>
+    </div>
+    <div class="form-row">
+      <label for="request_id">Request ID</label>
+      <input type="number" id="request_id" min="1" required placeholder="e.g. 12" oninput="syncDropdown()">
+      <small>The facility will provide this ID. It auto-fills when you pick from the dropdown above.</small>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="createDelivery()">Create Delivery</button>
+      <button class="btn btn-secondary" onclick="location.href='add_delivery_item.html'">Next: Add Items</button>
+    </div>
+  </div>
+  <div id="last-delivery" style="display:none;" class="action-panel" style="margin-top:1.5rem;">
+    <h3>Delivery Created</h3>
+    <p id="last-delivery-msg"></p>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="location.href='add_delivery_item.html'">Add Items to This Delivery</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('supplier');
+let lastDeliveryId = null;
+
+function syncRequestId() {
+  const sel = document.getElementById('request_select');
+  if (sel.value) document.getElementById('request_id').value = sel.value;
+}
+function syncDropdown() {
+  const val = document.getElementById('request_id').value;
+  const sel = document.getElementById('request_select');
+  // Try to match option
+  let matched = false;
+  for (let opt of sel.options) { if (opt.value == val) { sel.value = val; matched = true; break; } }
+  if (!matched) sel.value = '';
+}
+
+async function loadOpenRequests() {
+  const sel = document.getElementById('request_select');
+  try {
+    // Use admin get_applications as a proxy — there's no public requests endpoint
+    // We just pre-populate via the facility stock endpoint approach
+    // Since no direct "open requests" API exists, we show a helpful placeholder
+    sel.innerHTML = '<option value="">-- Enter Request ID manually --</option>';
+  } catch(e) {
+    sel.innerHTML = '<option value="">-- Could not load requests --</option>';
+  }
+}
+
+async function createDelivery() {
+  const request_id = parseInt(document.getElementById('request_id').value);
+  if (!request_id) { alert('Request ID is required.'); return; }
+  try {
+    const data = await apiPost('api/supplier/create_delivery.php', { request_id });
+    if (data.status === 'success') {
+      lastDeliveryId = data.delivery_id;
+      sessionStorage.setItem('last_delivery_id', lastDeliveryId);
+      const panel = document.getElementById('last-delivery');
+      document.getElementById('last-delivery-msg').textContent =
+        'Delivery #' + lastDeliveryId + ' created for Request #' + request_id + '. Click below to add items.';
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      alert(data.message || 'Failed to create delivery.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+loadOpenRequests();
+</script>
+</body>
+</html>

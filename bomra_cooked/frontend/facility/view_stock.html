@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - My Stock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/facility.html'">Back to Dashboard</button>
+    <h1>My Facility Stock</h1>
+  </div>
+  <div class="page-desc">
+    All medicine batches in your facility's inventory. Batches expiring within 90 days or already expired are flagged.
+    <p><strong>Status key:</strong> ok = &gt;90 days to expiry | expiring_soon = within 90 days | expired = past expiry date, do not dispense</p>
+  </div>
+  <div id="stock-list" class="table-wrap"><p class="state-msg">Loading stock...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("facility");
+apiGet('api/facility/get_stock.php')
+  .then(data => {
+    const div = document.getElementById('stock-list');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No stock found. Stock is added automatically when a supplier completes a delivery.</p>'; return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>Medicine</th><th>Manufacturer</th><th>Supplier</th><th>Batch No.</th><th>Expiry Date</th><th>Quantity</th><th>Status</th></tr></thead><tbody>';
+    data.data.forEach(s => {
+      html += `<tr><td>${s.medicine_name}</td><td>${s.manufacturer}</td><td>${s.supplier_name}</td><td>${s.batch_number}</td><td>${s.expiry_date}</td><td>${s.quantity}</td><td><span class="badge badge-${s.expiry_status}">${s.expiry_status}</span></td></tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  })
+  .catch(() => { document.getElementById('stock-list').innerHTML = '<p class="state-msg">Failed to load stock. Please login again.</p>'; });
+</script>
+</body>
+</html>

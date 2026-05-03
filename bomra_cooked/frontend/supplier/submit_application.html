@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Submit Registration Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Submit Medicine Registration Application</h1>
+  </div>
+  <div class="page-desc">
+    Select a batch from the dropdown below to submit it for BoMRA review. Only batches not yet submitted will appear.
+  </div>
+  <div class="form-actions" style="margin-bottom:1.5rem;">
+    <button class="btn btn-secondary" onclick="location.href='add_batch.html'">Add a Medicine Batch first</button>
+  </div>
+  <div id="batches-list"><p class="state-msg">Loading your batches...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage("supplier");
+
+async function submitApp(batchId) {
+  if (!confirm('Submit application for this batch?')) return;
+  try {
+    const data = await apiPost('api/supplier/submit_application.php', { batch_id: batchId });
+    alert(data.message || (data.status === 'success' ? 'Application submitted.' : 'Failed.'));
+    if (data.status === 'success') loadBatches();
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+async function loadBatches() {
+  const container = document.getElementById('batches-list');
+  container.innerHTML = '<p class="state-msg">Loading...</p>';
+  try {
+    // Load all applications to know which batches are already submitted
+    const appsData = await apiGet('api/admin/get_applications.php').catch(() => ({ status: 'error', data: [] }));
+    const submittedBatchIds = new Set((appsData.data || []).map(a => a.batch_id));
+
+    // We show all applications belonging to this supplier so they can see status
+    const appData = await apiGet('api/admin/get_applications.php');
+    const myApps = (appData.status === 'success' ? appData.data : []).filter(a => a.submitted_by === user.user_id);
+
+    // Build a simple form with batch selector from applications list
+    // Since there is no direct "my batches" API, we show existing applications + manual entry fallback
+    let html = '<div class="form-card">';
+
+    if (myApps.length) {
+      html += `<div style="margin-bottom:1.5rem;">
+        <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:0.75rem;">Your existing applications:</p>
+        <table class="data-table"><thead><tr><th>Batch ID</th><th>Medicine</th><th>Batch No.</th><th>Status</th></tr></thead><tbody>`;
+      myApps.forEach(a => {
+        html += `<tr>
+          <td>${a.batch_id}</td>
+          <td>${a.medicine_name}</td>
+          <td>${a.batch_number}</td>
+          <td><span class="badge badge-${a.status}">${a.status}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+
+    html += `
+      <div class="form-row">
+        <label for="batch_id_manual">Batch ID to Submit</label>
+        <input type="number" id="batch_id_manual" min="1" placeholder="Enter the Batch ID shown after adding a batch">
+        <small>The Batch ID was shown in the confirmation when you added your batch.</small>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="submitAppManual()">Submit Application</button>
+      </div>
+    </div>`;
+    container.innerHTML = html;
+  } catch(e) {
+    // Fallback to simple form
+    container.innerHTML = `
+      <div class="form-card">
+        <div class="form-row">
+          <label for="batch_id_manual">Batch ID</label>
+          <input type="number" id="batch_id_manual" min="1" placeholder="Batch ID from Add Batch page">
+          <small>The Batch ID was shown in the confirmation message when you added your batch.</small>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitAppManual()">Submit Application</button>
+        </div>
+      </div>`;
+  }
+}
+
+async function submitAppManual() {
+  const batch_id = parseInt(document.getElementById('batch_id_manual').value);
+  if (!batch_id) { alert('Batch ID is required.'); return; }
+  await submitApp(batch_id);
+}
+
+loadBatches();
+</script>
+</body>
+</html>

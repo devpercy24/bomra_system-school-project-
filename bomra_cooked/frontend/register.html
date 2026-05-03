@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA — Create Account</title>
+  <link rel="stylesheet" href="css/bomra.css">
+</head>
+<body>
+
+  <div class="register-page">
+
+    <!-- Left: form -->
+    <div class="register-form-side">
+      <div class="register-form-side__inner">
+
+        <div class="register-nav">
+          <div class="register-brand">
+            <div class="register-brand__logo">B</div>
+            <div class="register-brand__name">BoMRA</div>
+          </div>
+          <a href="index.html" class="register-back">Back to Home</a>
+        </div>
+
+        <h1 class="register-heading">Create your<br>account</h1>
+        <p class="register-sub">
+          Already registered? <a href="login.html">Sign in here</a>
+        </p>
+
+        <div class="field">
+          <label class="field__label" for="name">Full Name / Organisation Name</label>
+          <input class="field__input" type="text" id="name" name="name" placeholder="e.g. Acme Pharma Ltd." required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="email">Email Address</label>
+          <input class="field__input" type="email" id="email" name="email" placeholder="you@organisation.com" required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <input class="field__input" type="password" id="password" name="password" placeholder="Create a strong password" required>
+          <p class="field__hint">At least 8 characters with uppercase, lowercase, and a number.</p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="role">Account Type</label>
+          <div class="field__select-wrap">
+            <select class="field__select" id="role" name="role" required>
+              <option value="">-- Select your role --</option>
+              <option value="supplier">Pharmaceutical Supplier</option>
+              <option value="facility">Facility / Pharmacy</option>
+              <option value="inspector">Inspector</option>
+            </select>
+          </div>
+          <p class="field__hint">Admin accounts are not available for self-registration.</p>
+        </div>
+
+        <button class="btn btn--teal btn--lg auth-submit" onclick="register()">
+          Create Account
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Right: two stacked image panels — add your own images here -->
+    <div class="register-visual-side">
+      <div class="register-visual-panel">
+        <img src="images/bomrameeting.jpg" alt="Medicine Safety">
+        <span class="register-visual-panel__label">Medicine Safety</span>
+      </div>
+      <div class="register-visual-panel">
+        <img src="images/bomrameeting2.jpg" alt="Regulatory Oversight">
+        <span class="register-visual-panel__label">Regulatory Oversight</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

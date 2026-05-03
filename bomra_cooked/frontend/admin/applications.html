@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - All Applications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+  <style>
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:var(--surface); border-radius:12px; padding:2rem; max-width:520px; width:92%; box-shadow:0 8px 32px rgba(0,0,0,0.25); }
+    .modal-box h3 { margin:0 0 1rem; font-size:1.1rem; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem 1rem; font-size:0.9rem; }
+    .detail-item .label { color:var(--text-light); font-size:0.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+    .modal-actions { display:flex; gap:0.75rem; margin-top:1.5rem; flex-wrap:wrap; }
+  </style>
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+
+<!-- Application detail modal -->
+<div id="app-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <h3 id="modal-title">Application Details</h3>
+    <div id="modal-body" class="detail-grid"></div>
+    <div class="modal-actions">
+      <button id="modal-review-btn" class="btn btn-primary" style="display:none" onclick="goReview()">Review This Application</button>
+      <button id="modal-cert-btn" class="btn btn-secondary" style="display:none" onclick="goCert()">Issue Certificate</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Medicine Registration Applications</h1>
+  </div>
+  <div class="page-desc">
+    All medicine registration applications submitted by suppliers. Click <strong>View</strong> on any row to see details and take action.
+    <p><strong>Status key:</strong> pending = awaiting review &nbsp;|&nbsp; approved = cleared for distribution &nbsp;|&nbsp; rejected = not approved</p>
+  </div>
+  <div class="form-actions" style="margin-bottom:1.5rem;">
+    <button class="btn btn-secondary" onclick="location.href='review_application.html'">Review Applications</button>
+    <button class="btn btn-secondary" onclick="location.href='issue_certificate.html'">Issue Certificate</button>
+  </div>
+  <div id="applications-list" class="table-wrap"><p class="state-msg">Loading applications...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+let currentApp = null;
+
+function openModal(app) {
+  currentApp = app;
+  document.getElementById('modal-title').textContent = 'Application #' + app.application_id + ' — ' + app.medicine_name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-item"><div class="label">Medicine</div><div>${app.medicine_name}</div></div>
+    <div class="detail-item"><div class="label">Manufacturer</div><div>${app.manufacturer}</div></div>
+    <div class="detail-item"><div class="label">Batch Number</div><div>${app.batch_number}</div></div>
+    <div class="detail-item"><div class="label">Batch ID</div><div>${app.batch_id}</div></div>
+    <div class="detail-item"><div class="label">Expiry Date</div><div>${app.expiry_date}</div></div>
+    <div class="detail-item"><div class="label">Quantity</div><div>${app.quantity}</div></div>
+    <div class="detail-item"><div class="label">Supplier</div><div>${app.supplier_name}</div></div>
+    <div class="detail-item"><div class="label">Submitted By</div><div>${app.submitter_name}</div></div>
+    <div class="detail-item"><div class="label">Status</div><div><span class="badge badge-${app.status}">${app.status}</span></div></div>
+    <div class="detail-item"><div class="label">Review Date</div><div>${app.review_date || 'Not yet reviewed'}</div></div>
+  `;
+  const reviewBtn = document.getElementById('modal-review-btn');
+  const certBtn = document.getElementById('modal-cert-btn');
+  reviewBtn.style.display = app.status === 'pending' ? 'inline-flex' : 'none';
+  certBtn.style.display = app.status === 'approved' ? 'inline-flex' : 'none';
+  document.getElementById('app-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('app-modal').classList.remove('open'); currentApp = null; }
+function goReview() { if (currentApp) location.href = 'review_application.html'; }
+function goCert() { if (currentApp) location.href = 'issue_certificate.html'; }
+
+apiGet('api/admin/get_applications.php')
+  .then(data => {
+    const div = document.getElementById('applications-list');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No applications found.</p>';
+      return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>ID</th><th>Medicine</th><th>Batch No.</th><th>Supplier</th><th>Status</th><th>Review Date</th><th>Action</th></tr></thead><tbody>';
+    data.data.forEach(app => {
+      const appJson = JSON.stringify(app).replace(/'/g, "&#39;");
+      html += `<tr>
+        <td>${app.application_id}</td>
+        <td>${app.medicine_name}</td>
+        <td>${app.batch_number}</td>
+        <td>${app.supplier_name}</td>
+        <td><span class="badge badge-${app.status}">${app.status}</span></td>
+        <td>${app.review_date || 'Pending'}</td>
+        <td><button class="btn btn-sm btn-secondary" onclick='openModal(${appJson})'>View</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  })
+  .catch(() => {
+    document.getElementById('applications-list').innerHTML = '<p class="state-msg">Failed to load applications. Please login again.</p>';
+  });
+</script>
+</body>
+</html>

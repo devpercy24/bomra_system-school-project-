@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Issue Certificate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Issue Medicine Certificates</h1>
+  </div>
+  <div class="page-desc">
+    A certificate can only be issued for a medicine batch whose registration application has been <strong>approved</strong>. Click <strong>Issue Certificate</strong> on any eligible batch below.
+  </div>
+  <div id="applications-list" class="table-wrap"><p class="state-msg">Loading approved applications...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+
+async function issueCert(batchId, medicineName) {
+  if (!confirm('Issue certificate for batch: ' + medicineName + ' (Batch ID ' + batchId + ')?')) return;
+  try {
+    const data = await apiPost('api/admin/issue_certificate.php', { batch_id: batchId });
+    alert(data.message || (data.status === 'success' ? 'Certificate issued.' : 'Failed.'));
+    if (data.status === 'success') loadApplications();
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+async function loadApplications() {
+  const div = document.getElementById('applications-list');
+  div.innerHTML = '<p class="state-msg">Loading...</p>';
+  try {
+    const data = await apiGet('api/admin/get_applications.php');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No applications found.</p>';
+      return;
+    }
+    const approved = data.data.filter(a => a.status === 'approved');
+    if (!approved.length) {
+      div.innerHTML = '<p class="state-msg">No approved applications eligible for certificate issuance.</p>';
+      return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>Application ID</th><th>Batch ID</th><th>Medicine</th><th>Manufacturer</th><th>Batch No.</th><th>Expiry</th><th>Supplier</th><th>Action</th></tr></thead><tbody>';
+    approved.forEach(app => {
+      html += `<tr>
+        <td>${app.application_id}</td>
+        <td>${app.batch_id}</td>
+        <td>${app.medicine_name}</td>
+        <td>${app.manufacturer}</td>
+        <td>${app.batch_number}</td>
+        <td>${app.expiry_date}</td>
+        <td>${app.supplier_name}</td>
+        <td><button class="btn btn-sm btn-primary" onclick="issueCert(${app.batch_id}, ${JSON.stringify(app.medicine_name)})">Issue Certificate</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<p class="state-msg">Failed to load data. Please try again.</p>';
+  }
+}
+loadApplications();
+</script>
+</body>
+</html>

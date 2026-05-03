@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Report Drug Reaction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/facility.html'">Back to Dashboard</button>
+    <h1>Report an Adverse Drug Reaction</h1>
+  </div>
+  <div class="page-desc">
+    Report any adverse drug reaction (ADR) observed at your facility. All reports are reviewed by BoMRA inspectors and administrators.
+    <p><strong>Severity guide:</strong> Mild = no significant harm | Moderate = required intervention | Severe = life-threatening or hospitalisation</p>
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="batch_id">Batch ID</label>
+      <input type="number" id="batch_id" min="1" required placeholder="e.g. 7">
+      <small>The Batch ID is visible on the <button class="btn btn-sm btn-secondary" onclick="location.href='view_stock.html'" style="vertical-align:middle">View My Stock</button> page next to each medicine batch.</small>
+    </div>
+    <div class="form-row">
+      <label for="reaction">Reaction Observed</label>
+      <textarea id="reaction" required placeholder="Describe the adverse reaction — symptoms, onset, duration, outcome"></textarea>
+    </div>
+    <div class="form-row">
+      <label for="severity">Severity</label>
+      <select id="severity" required>
+        <option value="">-- Select severity --</option>
+        <option value="mild">Mild</option>
+        <option value="moderate">Moderate</option>
+        <option value="severe">Severe</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="notes">Additional Notes (optional)</label>
+      <textarea id="notes" placeholder="Patient age/gender (no identifying info), concurrent medications, relevant history"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="submitReport()">Submit Report</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+async function submitReport() {
+  const user = guardPage('facility');
+  if (!user) return;
+  const batch_id = parseInt(document.getElementById('batch_id').value);
+  const reaction = document.getElementById('reaction').value.trim();
+  const severity = document.getElementById('severity').value;
+  const notes    = document.getElementById('notes').value.trim();
+  if (!batch_id || !reaction || !severity) {
+    alert('Batch ID, reaction description, and severity are required.'); return;
+  }
+  try {
+    const data = await apiPost('api/reports/drug_reactions.php', { batch_id, reaction, severity, notes });
+    if (data.status === 'success') {
+      alert('Adverse drug reaction report submitted successfully. Thank you for reporting.');
+      document.getElementById('batch_id').value = '';
+      document.getElementById('reaction').value = '';
+      document.getElementById('severity').value = '';
+      document.getElementById('notes').value = '';
+    } else {
+      alert(data.message || 'Failed to submit report.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+</script>
+</body>
+</html>

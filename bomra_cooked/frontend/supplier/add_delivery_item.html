@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Add Delivery Item</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Add Item to Delivery</h1>
+  </div>
+  <div class="page-desc">
+    Add medicine batches to an existing delivery. You can add multiple items by submitting this form multiple times with the same Delivery ID.
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="delivery_id">Delivery ID</label>
+      <input type="number" id="delivery_id" min="1" required placeholder="e.g. 5">
+      <small id="delivery-hint" style="color:var(--accent);font-weight:500;"></small>
+    </div>
+    <div class="form-row">
+      <label for="batch_select">Select Batch</label>
+      <select id="batch_select" onchange="syncBatchId()">
+        <option value="">-- Loading your approved batches... --</option>
+      </select>
+      <small>Only approved batches are eligible for delivery.</small>
+    </div>
+    <div class="form-row">
+      <label for="batch_id">Batch ID</label>
+      <input type="number" id="batch_id" min="1" required placeholder="e.g. 3" oninput="syncBatchDropdown()">
+      <small>Auto-fills when you pick a batch above, or enter manually.</small>
+    </div>
+    <div class="form-row">
+      <label for="quantity">Quantity (units)</label>
+      <input type="number" id="quantity" min="1" required placeholder="e.g. 500">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addItem()">Add Item</button>
+      <button class="btn btn-secondary" onclick="location.href='complete_delivery.html'">Next: Complete Delivery</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('supplier');
+
+// Auto-fill delivery ID from session if coming from create_delivery
+const savedDeliveryId = sessionStorage.getItem('last_delivery_id');
+if (savedDeliveryId) {
+  document.getElementById('delivery_id').value = savedDeliveryId;
+  document.getElementById('delivery-hint').textContent = 'Auto-filled from your last created delivery.';
+}
+
+function syncBatchId() {
+  const sel = document.getElementById('batch_select');
+  if (sel.value) document.getElementById('batch_id').value = sel.value;
+}
+function syncBatchDropdown() {
+  const val = document.getElementById('batch_id').value;
+  const sel = document.getElementById('batch_select');
+  let matched = false;
+  for (let opt of sel.options) { if (opt.value == val) { sel.value = val; matched = true; break; } }
+  if (!matched) sel.value = '';
+}
+
+async function loadApprovedBatches() {
+  const sel = document.getElementById('batch_select');
+  try {
+    const data = await apiGet('api/admin/get_applications.php');
+    const approved = (data.status === 'success' ? data.data : []).filter(a => a.status === 'approved');
+    if (!approved.length) {
+      sel.innerHTML = '<option value="">-- No approved batches yet --</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">-- Select a batch --</option>' +
+      approved.map(a => `<option value="${a.batch_id}">Batch #${a.batch_id} &mdash; ${a.medicine_name} (${a.batch_number})</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">-- Could not load batches; enter ID manually --</option>';
+  }
+}
+
+async function addItem() {
+  const delivery_id = parseInt(document.getElementById('delivery_id').value);
+  const batch_id    = parseInt(document.getElementById('batch_id').value);
+  const quantity    = parseInt(document.getElementById('quantity').value);
+  if (!delivery_id || !batch_id || !quantity) { alert('All fields are required.'); return; }
+  try {
+    const data = await apiPost('api/supplier/add_delivery_item.php', { delivery_id, batch_id, quantity });
+    if (data.status === 'success') {
+      alert('Item added to delivery successfully. You can add more items or complete the delivery.');
+      document.getElementById('batch_id').value = '';
+      document.getElementById('batch_select').value = '';
+      document.getElementById('quantity').value = '';
+    } else {
+      alert(data.message || 'Failed to add item.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+loadApprovedBatches();
+</script>
+</body>
+</html>

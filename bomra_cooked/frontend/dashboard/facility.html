@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Facility Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:       #0a1628;
+      --navy-mid:   #122040;
+      --blue:       #1a3a6e;
+      --blue-light: #2857a4;
+      --teal:       #0e7a6e;
+      --teal-light: #12a898;
+      --gold:       #c49a2a;
+      --gold-light: #e8b83a;
+      --cream:      #f5f0e8;
+      --cream-dark: #ede6d6;
+      --white:      #ffffff;
+      --text-dark:  #0d1b2e;
+      --text-mid:   #3a4a62;
+      --text-light: #6a7a92;
+      --border:     rgba(10,22,40,0.10);
+      --shadow-sm:  0 2px 8px rgba(10,22,40,0.07);
+      --radius:     10px;
+      --red:        #b32d2d;
+      --orange:     #c96c1a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); min-height: 100vh; }
+
+    nav {
+      background: var(--navy); padding: 0 2rem; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(10,22,40,0.25);
+    }
+    .nav-brand { font-family: 'DM Serif Display', serif; color: var(--gold-light); font-size: 1.25rem; letter-spacing: 0.04em; }
+    .nav-brand span { color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 400; margin-left: 0.6rem; opacity: 0.7; }
+    .nav-right { display: flex; align-items: center; gap: 1.2rem; }
+    #welcome-msg { color: var(--cream); font-size: 0.88rem; }
+    .btn-logout {
+      background: transparent; border: 1px solid rgba(255,255,255,0.25);
+      color: var(--white); padding: 0.35rem 1rem; border-radius: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.1); }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 1.9rem; color: var(--navy); }
+    .page-header p { color: var(--text-mid); font-size: 0.92rem; margin-top: 0.3rem; }
+
+    /* STOCK SUMMARY */
+    .stock-bar {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.2rem 1.5rem;
+      margin-bottom: 2rem; display: flex; gap: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .stock-item { }
+    .stock-item .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 600; margin-bottom: 0.3rem; }
+    .stock-item .value { font-size: 1.5rem; font-weight: 600; color: var(--navy); }
+    .stock-item.warn .value { color: var(--orange); }
+    .stock-item.danger .value { color: var(--red); }
+    .divider { width: 1px; background: var(--border); }
+
+    .sections { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+    .section-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .section-head { padding: 1rem 1.4rem; border-bottom: 1px solid var(--border); background: var(--navy-mid); }
+    .section-head h2 { font-size: 0.95rem; font-weight: 600; color: var(--white); }
+    .section-head p { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-top: 0.2rem; }
+    .section-body { padding: 1rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .action-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.65rem 1rem; background: var(--cream);
+      border: 1px solid var(--border); border-radius: 7px;
+      font-size: 0.88rem; font-weight: 500; color: var(--text-dark);
+      text-decoration: none; transition: background 0.15s;
+    }
+    .action-link:hover { background: var(--cream-dark); }
+    .action-link .arrow { color: var(--text-light); }
+
+    .section-body .note { font-size: 0.8rem; color: var(--text-light); line-height: 1.5; }
+
+    @media (max-width: 720px) {
+      .sections { grid-template-columns: 1fr; }
+      .stock-bar { flex-wrap: wrap; gap: 1rem; }
+      .divider { display: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav>
+  <div class="nav-brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="nav-right">
+    <span id="welcome-msg">Facility</span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <h1>Facility Dashboard</h1>
+    <p>Stock monitoring, supply requests and adverse reaction reporting</p>
+  </div>
+
+  <div class="stock-bar">
+    <div class="stock-item">
+      <div class="label">Total Stock Lines</div>
+      <div class="value" id="stat-total">—</div>
+    </div>
+    <div class="divider"></div>
+    <div class="stock-item warn">
+      <div class="label">Expiring Soon</div>
+      <div class="value" id="stat-expiring">—</div>
+    </div>
+    <div class="divider"></div>
+    <div class="stock-item danger">
+      <div class="label">Expired</div>
+      <div class="value" id="stat-expired">—</div>
+    </div>
+  </div>
+
+  <div class="sections">
+
+    <!-- Supply Requests -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Supply Requests</h2>
+        <p>Request medicines from suppliers</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/create_request.html">Create a Supply Request <span class="arrow">&#8594;</span></a>
+        <p class="note">Share the Request ID with your supplier so they can fulfil the delivery.</p>
+      </div>
+    </div>
+
+    <!-- Stock -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Stock Monitoring</h2>
+        <p>View current inventory and expiry flags</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/view_stock.html">View My Stock <span class="arrow">&#8594;</span></a>
+        <p class="note">Batches expiring within 90 days or already expired are flagged for your attention.</p>
+      </div>
+    </div>
+
+    <!-- ADR Reporting -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Adverse Drug Reactions</h2>
+        <p>Submit patient safety reports to BoMRA</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/report_reaction.html">Submit a Reaction Report <span class="arrow">&#8594;</span></a>
+        <p class="note">Your reports help BoMRA identify safety patterns and protect public health.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('facility');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+apiGet('api/facility/get_stock.php').then(data => {
+  if (data.status === 'success' && Array.isArray(data.data)) {
+    const rows = data.data;
+    document.getElementById('stat-total').textContent = rows.length;
+    document.getElementById('stat-expiring').textContent = rows.filter(r => r.expiry_status === 'expiring_soon').length;
+    document.getElementById('stat-expired').textContent = rows.filter(r => r.expiry_status === 'expired').length;
+  }
+}).catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Create Supply Request</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/facility.html'">Back to Dashboard</button>
+    <h1>Create a Supply Request</h1>
+  </div>
+  <div class="page-desc">
+    A supply request notifies registered suppliers that your facility requires medicines. Your facility account is linked automatically — no additional details are required.
+    <p><strong>Workflow:</strong> Submit request &rarr; Share the Request ID with your supplier &rarr; Supplier creates and completes delivery &rarr; Your stock is updated automatically.</p>
+  </div>
+  <div class="form-card">
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="createRequest()">Submit Supply Request</button>
+      <button class="btn btn-secondary" onclick="location.href='view_stock.html'">View My Stock</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+async function createRequest() {
+  const user = guardPage('facility');
+  if (!user) return;
+  try {
+    const data = await apiPost('api/facility/create_request.php', {});
+    if (data.status === 'success') {
+      alert('Supply request created successfully.\n\nRequest ID: ' + (data.request_id || '') +
+        '\n\nShare this Request ID with your supplier so they can create a delivery.');
+    } else {
+      alert(data.message || 'Failed to create supply request.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+</script>
+</body>
+</html>

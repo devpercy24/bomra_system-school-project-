@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Add Medicine Batch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Add a Medicine Batch</h1>
+  </div>
+  <div class="page-desc">
+    Register a new medicine batch. After adding a batch, submit a registration application for BoMRA review before it can be distributed.
+    <p><strong>Workflow:</strong> Add batch &rarr; Submit application &rarr; Admin reviews &rarr; Approved batch available for delivery.</p>
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="medicine_name">Medicine Name</label>
+      <input type="text" id="medicine_name" required placeholder="e.g. Paracetamol 500mg">
+      <small>Include the strength and form (e.g. Amoxicillin 250mg Capsules).</small>
+    </div>
+    <div class="form-row">
+      <label for="manufacturer">Manufacturer</label>
+      <input type="text" id="manufacturer" required placeholder="e.g. PharmaCorp Ltd">
+      <small>Full legal name of the manufacturing company.</small>
+    </div>
+    <div class="form-row">
+      <label for="batch_number">Batch Number</label>
+      <input type="text" id="batch_number" required placeholder="e.g. PC-2025-001">
+      <small>As printed on the medicine packaging — must be unique per manufacturer.</small>
+    </div>
+    <div class="form-row">
+      <label for="expiry_date">Expiry Date</label>
+      <input type="date" id="expiry_date" required>
+      <small>The expiry date printed on the batch packaging.</small>
+    </div>
+    <div class="form-row">
+      <label for="quantity">Quantity (units)</label>
+      <input type="number" id="quantity" min="1" required placeholder="e.g. 5000">
+      <small>Total number of individual units (tablets, vials, etc.) in this batch.</small>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addBatch()">Add Batch</button>
+      <button class="btn btn-secondary" onclick="location.href='submit_application.html'">Submit Application</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+async function addBatch() {
+  const user = guardPage('supplier');
+  if (!user) return;
+  const medicine_name = document.getElementById('medicine_name').value.trim();
+  const manufacturer  = document.getElementById('manufacturer').value.trim();
+  const batch_number  = document.getElementById('batch_number').value.trim();
+  const expiry_date   = document.getElementById('expiry_date').value;
+  const quantity      = parseInt(document.getElementById('quantity').value);
+  if (!medicine_name || !manufacturer || !batch_number || !expiry_date || !quantity) {
+    alert('All fields are required.'); return;
+  }
+  try {
+    const data = await apiPost('api/supplier/add_batch.php', { medicine_name, manufacturer, batch_number, expiry_date, quantity });
+    if (data.status === 'success') {
+      alert('Batch added successfully.\n\nBatch ID: ' + (data.batch_id || '') +
+        '\n\nSave this Batch ID — you will need it to submit a registration application.');
+    } else {
+      alert(data.message || 'Failed to add batch.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Inspections Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Inspections Report</h1>
+  </div>
+  <div id="inspections-list" class="table-wrap"><p class="state-msg">Loading inspections...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+apiGet('api/reports/statistics.php?type=inspections')
+  .then(data => {
+    const div = document.getElementById('inspections-list');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No inspection records found.</p>'; return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>ID</th><th>Facility</th><th>Inspector</th><th>Status</th><th>Scheduled Date</th><th>Inspected At</th><th>Notes</th></tr></thead><tbody>';
+    data.data.forEach(i => {
+      html += `<tr><td>${i.inspection_id}</td><td>${i.facility_name}</td><td>${i.inspector_name}</td><td><span class="badge badge-${i.status}">${i.status}</span></td><td>${i.scheduled_date || 'N/A'}</td><td>${i.inspected_at}</td><td>${i.notes || ''}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  })
+  .catch(() => { document.getElementById('inspections-list').innerHTML = '<p class="state-msg">Failed to load report.</p>'; });
+</script>
+</body>
+</html>

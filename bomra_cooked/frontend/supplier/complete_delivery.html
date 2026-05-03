@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Complete Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Complete a Delivery</h1>
+  </div>
+  <div class="notice">
+    Completing a delivery marks it as delivered and automatically updates the facility's stock. This action cannot be undone — ensure all items have been added first.
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="delivery_id">Delivery ID</label>
+      <input type="number" id="delivery_id" min="1" required placeholder="e.g. 5">
+      <small id="delivery-hint" style="color:var(--accent);font-weight:500;"></small>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="completeDelivery()">Complete Delivery</button>
+      <button class="btn btn-secondary" onclick="location.href='add_delivery_item.html'">&#8592; Back: Add Items</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage('supplier');
+
+// Auto-fill from session
+const savedDeliveryId = sessionStorage.getItem('last_delivery_id');
+if (savedDeliveryId) {
+  document.getElementById('delivery_id').value = savedDeliveryId;
+  document.getElementById('delivery-hint').textContent = 'Auto-filled from your last created delivery.';
+}
+
+async function completeDelivery() {
+  const delivery_id = parseInt(document.getElementById('delivery_id').value);
+  if (!delivery_id) { alert('Delivery ID is required.'); return; }
+  if (!confirm('Mark Delivery #' + delivery_id + ' as complete? This will update the facility\'s stock and cannot be undone.')) return;
+  try {
+    const data = await apiPost('api/supplier/complete_delivery.php', { delivery_id });
+    alert(data.message || (data.status === 'success' ? 'Delivery completed. The facility\'s stock has been updated.' : 'Failed.'));
+    if (data.status === 'success') {
+      sessionStorage.removeItem('last_delivery_id');
+      document.getElementById('delivery_id').value = '';
+      document.getElementById('delivery-hint').textContent = '';
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+</script>
+</body>
+</html>

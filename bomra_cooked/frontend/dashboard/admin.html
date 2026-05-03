@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:       #0a1628;
+      --navy-mid:   #122040;
+      --blue:       #1a3a6e;
+      --blue-light: #2857a4;
+      --teal:       #0e7a6e;
+      --teal-light: #12a898;
+      --gold:       #c49a2a;
+      --gold-light: #e8b83a;
+      --cream:      #f5f0e8;
+      --cream-dark: #ede6d6;
+      --white:      #ffffff;
+      --text-dark:  #0d1b2e;
+      --text-mid:   #3a4a62;
+      --text-light: #6a7a92;
+      --border:     rgba(10,22,40,0.10);
+      --shadow-sm:  0 2px 8px rgba(10,22,40,0.07);
+      --shadow-md:  0 6px 24px rgba(10,22,40,0.12);
+      --radius:     10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--navy);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(10,22,40,0.25);
+    }
+    .nav-brand {
+      font-family: 'DM Serif Display', serif;
+      color: var(--gold-light);
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+    }
+    .nav-brand span { color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 400; margin-left: 0.6rem; opacity: 0.7; }
+    .nav-right { display: flex; align-items: center; gap: 1.2rem; }
+    #welcome-msg { color: var(--cream); font-size: 0.88rem; }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--white);
+      padding: 0.35rem 1rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+
+    /* MAIN */
+    main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 1.9rem; color: var(--navy); }
+    .page-header p { color: var(--text-mid); font-size: 0.92rem; margin-top: 0.3rem; }
+
+    /* STAT ROW */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; }
+    .stat-value { font-size: 2rem; font-weight: 600; color: var(--navy); line-height: 1; }
+    .stat-card.accent-teal .stat-value { color: var(--teal); }
+    .stat-card.accent-gold .stat-value { color: var(--gold); }
+    .stat-card.accent-blue .stat-value { color: var(--blue-light); }
+
+    /* SECTIONS */
+    .sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .section-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-head {
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--navy-mid);
+    }
+    .section-head h2 { font-size: 0.95rem; font-weight: 600; color: var(--white); }
+    .section-head p { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-top: 0.2rem; }
+    .section-body { padding: 1rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .action-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1rem;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .action-link:hover { background: var(--cream-dark); border-color: rgba(10,22,40,0.2); }
+    .action-link .arrow { color: var(--text-light); font-size: 1rem; }
+
+    /* FULL WIDTH SECTION */
+    .sections.full { grid-template-columns: 1fr; margin-top: 1.25rem; }
+    .reports-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+
+    @media (max-width: 780px) {
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .sections { grid-template-columns: 1fr; }
+      .reports-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav>
+  <div class="nav-brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="nav-right">
+    <span id="welcome-msg">Administrator</span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Regulatory oversight — applications, licenses, users and reports</p>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Applications</div>
+      <div class="stat-value" id="stat-apps">—</div>
+    </div>
+    <div class="stat-card accent-teal">
+      <div class="stat-label">Active Licenses</div>
+      <div class="stat-value" id="stat-licenses">—</div>
+    </div>
+    <div class="stat-card accent-gold">
+      <div class="stat-label">Pending Review</div>
+      <div class="stat-value" id="stat-pending">—</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-label">Registered Users</div>
+      <div class="stat-value" id="stat-users">—</div>
+    </div>
+  </div>
+
+  <div class="sections">
+    <!-- Applications -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Medicine Registration</h2>
+        <p>Review and approve supplier applications</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/applications.html">View All Applications <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/review_application.html">Review an Application <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/issue_certificate.html">Issue a Certificate <span class="arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Licenses -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>License Management</h2>
+        <p>Issue, renew or suspend operating licenses</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/licenses.html">View All Licenses <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/manage_license.html">Issue a License <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/manage_license.html">Renew / Suspend a License <span class="arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>User Management</h2>
+        <p>View registered users and manage roles</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/users.html">View All Users <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/change_role.html">Change a User Role <span class="arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Reports &amp; Statistics</h2>
+        <p>Regulatory compliance and oversight reports</p>
+      </div>
+      <div class="section-body reports-grid">
+        <a class="action-link" href="../admin/report_summary.html">System Summary <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_inspections.html">Inspections <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_expired.html">Expired Medicines <span class="arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_reactions.html">Drug Reactions <span class="arrow">&#8594;</span></a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('admin');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+// Load summary stats
+apiGet('api/reports/statistics.php?type=summary').then(data => {
+  if (data.status === 'success' && data.data) {
+    const d = data.data;
+    if (d.total_applications !== undefined) document.getElementById('stat-apps').textContent = d.total_applications;
+    if (d.active_licenses !== undefined) document.getElementById('stat-licenses').textContent = d.active_licenses;
+    if (d.pending_applications !== undefined) document.getElementById('stat-pending').textContent = d.pending_applications;
+    if (d.total_users !== undefined) document.getElementById('stat-users').textContent = d.total_users;
+  }
+}).catch(() => {});
+</script>
+</body>
+</html>

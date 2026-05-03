@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Record Inspection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/inspector.html'">Back to Dashboard</button>
+    <h1>Record or Schedule a Pharmacy Inspection</h1>
+  </div>
+  <div class="page-desc">
+    Schedule an upcoming inspection or record the outcome of a completed one.
+    <p><strong>Status guide:</strong> Scheduled = planned future inspection, date required | Passed = facility met all standards | Failed = did not meet standards, document findings in notes</p>
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <label for="facility_select">Select Facility</label>
+      <select id="facility_select" onchange="syncFacilityId()">
+        <option value="">-- Loading facilities... --</option>
+      </select>
+      <small>Registered facility/pharmacy accounts. Select one or enter the ID manually below.</small>
+    </div>
+    <div class="form-row">
+      <label for="facility_id">Facility ID</label>
+      <input type="number" id="facility_id" min="1" required placeholder="e.g. 3" oninput="syncFacilityDropdown()">
+      <small>The user account ID of the facility. Auto-fills when you pick from the dropdown above.</small>
+    </div>
+    <div class="form-row">
+      <label for="status">Inspection Status</label>
+      <select id="status" required onchange="toggleDateField()">
+        <option value="">-- Select status --</option>
+        <option value="scheduled">Scheduled (upcoming)</option>
+        <option value="passed">Passed</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
+    <div id="date-field" class="form-row" style="display:none;">
+      <label for="scheduled_date">Scheduled Date</label>
+      <input type="date" id="scheduled_date">
+      <small>Required when status is "Scheduled".</small>
+    </div>
+    <div class="form-row">
+      <label for="notes">Inspection Notes / Findings</label>
+      <textarea id="notes" placeholder="Record your findings, observations, or reason for the result. Required for Failed inspections."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addInspection()">Submit Inspection Record</button>
+      <button class="btn btn-secondary" onclick="location.href='my_inspections.html'">View My Inspections</button>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage('inspector');
+
+function syncFacilityId() {
+  const sel = document.getElementById('facility_select');
+  if (sel.value) document.getElementById('facility_id').value = sel.value;
+}
+function syncFacilityDropdown() {
+  const val = document.getElementById('facility_id').value;
+  const sel = document.getElementById('facility_select');
+  let matched = false;
+  for (let opt of sel.options) { if (opt.value == val) { sel.value = val; matched = true; break; } }
+  if (!matched) sel.value = '';
+}
+function toggleDateField() {
+  const status = document.getElementById('status').value;
+  document.getElementById('date-field').style.display = status === 'scheduled' ? 'block' : 'none';
+}
+
+async function loadFacilities() {
+  const sel = document.getElementById('facility_select');
+  try {
+    const data = await apiGet('api/admin/manage_users.php');
+    const facilities = (data.status === 'success' ? data.data : []).filter(u => u.role === 'facility');
+    if (!facilities.length) {
+      sel.innerHTML = '<option value="">-- No facility users found; enter ID manually --</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">-- Select a facility --</option>' +
+      facilities.map(u => `<option value="${u.user_id}">${u.name} (ID: ${u.user_id})</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">-- Could not load; enter ID manually --</option>';
+  }
+}
+
+async function addInspection() {
+  const user = guardPage('inspector');
+  if (!user) return;
+  const facility_id    = parseInt(document.getElementById('facility_id').value);
+  const status         = document.getElementById('status').value;
+  const scheduled_date = document.getElementById('scheduled_date').value;
+  const notes          = document.getElementById('notes').value.trim();
+  if (!facility_id || !status) { alert('Facility and status are required.'); return; }
+  if (status === 'scheduled' && !scheduled_date) {
+    alert('Scheduled date is required for a scheduled inspection.'); return;
+  }
+  try {
+    const data = await apiPost('api/inspector/add_inspection.php', { facility_id, status, scheduled_date, notes });
+    if (data.status === 'success') {
+      alert('Inspection record saved successfully.');
+      document.getElementById('facility_id').value = '';
+      document.getElementById('facility_select').value = '';
+      document.getElementById('status').value = '';
+      document.getElementById('scheduled_date').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('date-field').style.display = 'none';
+    } else {
+      alert(data.message || 'Failed to save inspection.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+loadFacilities();
+</script>
+</body>
+</html>
