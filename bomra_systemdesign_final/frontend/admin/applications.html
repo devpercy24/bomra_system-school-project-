@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - All Applications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+
+<!-- Application detail modal -->
+<div id="app-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <h3 id="modal-title">Application Details</h3>
+    <div id="modal-body" class="detail-grid"></div>
+    <div class="modal-actions">
+      <button id="modal-approve-btn" class="btn btn-primary" style="display:none;background:#059669;border-color:#059669;" onclick="quickApprove()">&#10003; Approve</button>
+      <button id="modal-reject-btn" class="btn btn-secondary" style="display:none;color:#b91c1c;border-color:#fca5a5;" onclick="quickReject()">&#10007; Reject</button>
+      <button id="modal-cert-btn" class="btn btn-primary" style="display:none" onclick="issueCertDirect()">Issue Certificate</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Medicine Registration Applications</h1>
+  </div>
+  <div class="page-desc">
+    All medicine registration applications submitted by suppliers. Click <strong>View</strong> on any row to see details and take action.
+  </div>
+  <div class="form-actions" style="margin-bottom:1.5rem;">
+    <button class="btn btn-secondary" onclick="location.href='review_application.html'">Review Applications</button>
+    <button class="btn btn-secondary" onclick="location.href='issue_certificate.html'">Issue Certificate</button>
+  </div>
+  <div id="applications-list" class="table-wrap"><p class="state-msg">Loading applications...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+let currentApp = null;
+
+function openModal(app) {
+  currentApp = app;
+  document.getElementById('modal-title').textContent = 'Application #' + app.application_id + ' — ' + app.medicine_name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-item"><div class="label">Medicine</div><div>${app.medicine_name}</div></div>
+    <div class="detail-item"><div class="label">Manufacturer</div><div>${app.manufacturer}</div></div>
+    <div class="detail-item"><div class="label">Batch Number</div><div>${app.batch_number}</div></div>
+    <div class="detail-item"><div class="label">Batch ID</div><div>${app.batch_id}</div></div>
+    <div class="detail-item"><div class="label">Expiry Date</div><div>${app.expiry_date}</div></div>
+    <div class="detail-item"><div class="label">Quantity</div><div>${app.quantity}</div></div>
+    <div class="detail-item"><div class="label">Supplier</div><div>${app.supplier_name}</div></div>
+    <div class="detail-item"><div class="label">Submitted By</div><div>${app.submitter_name}</div></div>
+    <div class="detail-item"><div class="label">Status</div><div><span class="badge badge-${app.status}">${app.status}</span></div></div>
+    <div class="detail-item"><div class="label">Review Date</div><div>${app.review_date || 'Not yet reviewed'}</div></div>
+  `;
+  const reviewBtn  = document.getElementById('modal-approve-btn');
+  const rejectBtn  = document.getElementById('modal-reject-btn');
+  const certBtn    = document.getElementById('modal-cert-btn');
+  reviewBtn.style.display = app.status === 'pending' ? 'inline-flex' : 'none';
+  rejectBtn.style.display = app.status === 'pending' ? 'inline-flex' : 'none';
+  certBtn.style.display   = app.status === 'approved' ? 'inline-flex' : 'none';
+  document.getElementById('app-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('app-modal').classList.remove('open'); currentApp = null; }
+
+async function quickApprove() {
+  if (!currentApp) return;
+  if (!confirm('Approve application for ' + currentApp.medicine_name + '?')) return;
+  const data = await apiPost('api/admin/review_application.php', { application_id: currentApp.application_id, status: 'approved', notes: '' });
+  alert(data.message || (data.status === 'success' ? 'Approved.' : 'Failed.'));
+  if (data.status === 'success') { closeModal(); reloadApps(); }
+}
+
+async function quickReject() {
+  if (!currentApp) return;
+  const notes = prompt('Optional rejection reason:') ?? '';
+  if (notes === null) return; // cancelled
+  const data = await apiPost('api/admin/review_application.php', { application_id: currentApp.application_id, status: 'rejected', notes });
+  alert(data.message || (data.status === 'success' ? 'Rejected.' : 'Failed.'));
+  if (data.status === 'success') { closeModal(); reloadApps(); }
+}
+
+async function issueCertDirect() {
+  if (!currentApp) return;
+  if (!confirm('Issue certificate for ' + currentApp.medicine_name + '?')) return;
+  const data = await apiPost('api/admin/issue_certificate.php', { batch_id: currentApp.batch_id });
+  alert(data.message || (data.status === 'success' ? 'Certificate issued.' : 'Failed.'));
+  if (data.status === 'success') { closeModal(); reloadApps(); }
+}
+
+let appsCache = [];
+function reloadApps() { loadApplications(); }
+
+function loadApplications() {
+  apiGet('api/admin/get_applications.php')
+    .then(data => {
+      const div = document.getElementById('applications-list');
+      if (data.status !== 'success' || !data.data.length) {
+        div.innerHTML = '<p class="state-msg">No applications found.</p>';
+        return;
+      }
+      let html = '<table class="data-table"><thead><tr><th>ID</th><th>Medicine</th><th>Batch No.</th><th>Supplier</th><th>Status</th><th>Review Date</th><th>Action</th></tr></thead><tbody>';
+      data.data.forEach(app => {
+        const appJson = JSON.stringify(app).replace(/'/g, "&#39;");
+        html += `<tr>
+          <td>${app.application_id}</td>
+          <td>${app.medicine_name}</td>
+          <td>${app.batch_number}</td>
+          <td>${app.supplier_name}</td>
+          <td><span class="badge badge-${app.status}">${app.status}</span></td>
+          <td>${app.review_date || 'Pending'}</td>
+          <td><button class="btn btn-sm btn-secondary" onclick='openModal(${appJson})'>View</button>${app.status==='pending'?` <button class="btn btn-sm btn-primary" style="background:#059669;border-color:#059669;" onclick='openModal(${appJson});quickApprove()'>&#10003;</button>`:''}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    })
+    .catch(() => {
+      document.getElementById('applications-list').innerHTML = '<p class="state-msg">Failed to load applications. Please login again.</p>';
+    });
+}
+loadApplications();
+</script>
+</body>
+</html>

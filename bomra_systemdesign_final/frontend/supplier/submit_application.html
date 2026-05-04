@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - My Batches & Applications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>My Batches &amp; Applications</h1>
+  </div>
+  <div class="page-desc">
+    All your medicine batches and their BoMRA registration status. Batches you just added are submitted automatically.
+  </div>
+  <div class="form-actions" style="margin-bottom:1.5rem;">
+    <button class="btn btn-primary" onclick="location.href='add_batch.html'">+ Add New Batch</button>
+  </div>
+  <div id="batches-list"><p class="state-msg">Loading your batches…</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage("supplier");
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function submitBatch(batchId, btnEl) {
+  if (!confirm('Submit this batch for BoMRA review?')) return;
+  btnEl.disabled = true; btnEl.textContent = 'Submitting…';
+  try {
+    const data = await apiPost('api/supplier/submit_application.php', { batch_id: batchId });
+    if (data.status === 'success') {
+      loadBatches(); // refresh list
+    } else {
+      alert(data.message || 'Failed to submit.');
+      btnEl.disabled = false; btnEl.textContent = 'Submit for Review';
+    }
+  } catch(e) { alert('Network error: ' + e.message); btnEl.disabled = false; btnEl.textContent = 'Submit for Review'; }
+}
+
+async function loadBatches() {
+  const container = document.getElementById('batches-list');
+  container.innerHTML = '<p class="state-msg">Loading…</p>';
+  try {
+    const data = await apiGet('api/supplier/get_my_batches.php');
+    if (data.status !== 'success' || !data.data.length) {
+      container.innerHTML = `<div style="text-align:center;padding:2rem;">
+        <p style="color:var(--text-light);margin-bottom:1rem;">You have no batches yet.</p>
+        <button class="btn btn-primary" onclick="location.href='add_batch.html'">Add Your First Batch</button>
+      </div>`;
+      return;
+    }
+
+    const statusLabel = {
+      approved: '<span class="badge badge-approved">Approved</span>',
+      pending:  '<span class="badge badge-pending">Pending Review</span>',
+      rejected: '<span class="badge badge-rejected">Rejected</span>',
+    };
+
+    container.innerHTML = data.data.map(b => {
+      const appStatus = b.application_status;
+      const actionHtml = !appStatus
+        ? `<button class="btn btn-sm btn-primary" onclick="submitBatch(${b.batch_id}, this)">Submit for Review</button>`
+        : (statusLabel[appStatus] || `<span class="badge">${appStatus}</span>`);
+
+      return `<div class="batch-list-card">
+        <div class="batch-list-card__info">
+          <div class="batch-list-card__name">${escHtml(b.medicine_name)}</div>
+          <div class="batch-list-card__meta">
+            Manufacturer: ${escHtml(b.manufacturer)} &nbsp;|&nbsp;
+            Batch No: ${escHtml(b.batch_number)} &nbsp;|&nbsp;
+            Qty: ${parseInt(b.quantity).toLocaleString()} units &nbsp;|&nbsp;
+            Expires: ${b.expiry_date}
+          </div>
+        </div>
+        <div class="batch-list-card__actions">${actionHtml}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<p class="state-msg">Failed to load batches. Please try again.</p>';
+  }
+}
+
+loadBatches();
+</script>
+</body>
+</html>

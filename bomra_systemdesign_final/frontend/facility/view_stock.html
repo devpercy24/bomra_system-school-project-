@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - My Stock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/facility.html'">Back to Dashboard</button>
+    <h1>My Facility Stock</h1>
+  </div>
+  <div class="page-desc">
+    All medicine batches in your inventory. Use the filters to focus on items needing attention.
+  </div>
+
+  <div id="summary-bar" class="summary-bar" style="display:none;">
+    <div class="summary-card"><div class="s-label">Total Lines</div><div class="s-value" id="s-total">—</div></div>
+    <div class="summary-card info"><div class="s-label">Total Units</div><div class="s-value" id="s-units">—</div></div>
+    <div class="summary-card warn"><div class="s-label">Expiring Soon</div><div class="s-value" id="s-expiring">—</div></div>
+    <div class="summary-card danger"><div class="s-label">Expired</div><div class="s-value" id="s-expired">—</div></div>
+  </div>
+
+  <div id="shortage-panel" class="shortage-panel" style="display:none;">
+    <h3>&#9888; Action Required</h3>
+    <div id="shortage-msg"></div>
+  </div>
+
+  <div class="filter-bar" id="filter-bar" style="display:none;">
+    <button class="filter-btn active" onclick="applyFilter('all',this)">All Stock</button>
+    <button class="filter-btn" onclick="applyFilter('expired',this)">Expired</button>
+    <button class="filter-btn" onclick="applyFilter('expiring_soon',this)">Expiring Soon</button>
+    <button class="filter-btn" onclick="applyFilter('ok',this)">OK</button>
+    <button class="btn btn-primary" style="margin-left:auto;padding:0.35rem 1rem;font-size:0.82rem;" onclick="location.href='create_request.html'">&#43; Request More Stock</button>
+  </div>
+
+  <div class="table-wrap">
+    <div id="stock-list"><p class="state-msg">Loading stock&#8230;</p></div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+guardPage('facility');
+
+let allRows = [];
+let activeFilter = 'all';
+
+apiGet('api/facility/get_stock.php')
+  .then(data => {
+    if (data.status !== 'success' || !data.data.length) {
+      document.getElementById('stock-list').innerHTML =
+        '<p class="state-msg">No stock found. Stock is added automatically when a supplier completes a delivery. <a href="create_request.html" style="color:var(--blue-light,#2857a4);font-weight:500;">Create a supply request</a> to get started.</p>';
+      return;
+    }
+
+    allRows = data.data;
+    renderSummary();
+    renderShortage();
+    renderTable(allRows);
+    document.getElementById('filter-bar').style.display = 'flex';
+    document.getElementById('summary-bar').style.display = 'grid';
+  })
+  .catch(() => {
+    document.getElementById('stock-list').innerHTML =
+      '<p class="state-msg">Failed to load stock. Please <a href="../login.html">log in again</a>.</p>';
+  });
+
+function renderSummary() {
+  document.getElementById('s-total').textContent    = allRows.length;
+  document.getElementById('s-units').textContent    = allRows.reduce((a,r)=>a+parseInt(r.quantity||0),0).toLocaleString();
+  document.getElementById('s-expiring').textContent = allRows.filter(r=>r.expiry_status==='expiring_soon').length;
+  document.getElementById('s-expired').textContent  = allRows.filter(r=>r.expiry_status==='expired').length;
+}
+
+function renderShortage() {
+  const expired = allRows.filter(r=>r.expiry_status==='expired');
+  const expiring = allRows.filter(r=>r.expiry_status==='expiring_soon');
+  const msgs = [];
+  if (expired.length)  msgs.push(`<strong>${expired.length} batch${expired.length>1?'es':''} expired</strong> — do not dispense. Remove from stock and <button class="link-btn" onclick="applyFilter('expired',null)">view expired items</button>.`);
+  if (expiring.length) msgs.push(`<strong>${expiring.length} batch${expiring.length>1?'es':''} expiring within 90 days</strong>. Prioritise dispensing or <button class="link-btn" onclick="location.href='create_request.html'">request replacements</button>.`);
+  if (!msgs.length) return;
+  document.getElementById('shortage-panel').style.display='block';
+  document.getElementById('shortage-msg').innerHTML = msgs.map(m=>`<p style="font-size:0.85rem;color:#991b1b;margin-bottom:0.3rem;">${m}</p>`).join('');
+}
+
+function applyFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const filtered = filter==='all' ? allRows : allRows.filter(r=>r.expiry_status===filter);
+  renderTable(filtered);
+}
+
+function renderTable(rows) {
+  if (!rows.length) {
+    document.getElementById('stock-list').innerHTML = '<p class="state-msg">No items match this filter.</p>';
+    return;
+  }
+  let html = '<table class="data-table"><thead><tr>';
+  html += '<th>Medicine</th><th>Manufacturer</th><th>Supplier</th><th>Batch No.</th><th>Expiry Date</th><th>Qty</th><th>Status</th><th></th>';
+  html += '</tr></thead><tbody>';
+  rows.forEach(s => {
+    const rowCls = s.expiry_status==='expired'?'row-expired':s.expiry_status==='expiring_soon'?'row-expiring':'';
+    const badge = `<span class="badge-${s.expiry_status}">${s.expiry_status==='expiring_soon'?'Expiring Soon':s.expiry_status==='expired'?'Expired':'OK'}</span>`;
+    const action = (s.expiry_status==='expired'||s.expiry_status==='expiring_soon')
+      ? `<button class="link-btn" onclick="requestMore('${escJs(s.medicine_name)}')">Request More</button>` : '';
+    html += `<tr class="${rowCls}">
+      <td style="font-weight:500;">${escHtml(s.medicine_name)}</td>
+      <td>${escHtml(s.manufacturer)}</td>
+      <td>${escHtml(s.supplier_name)}</td>
+      <td style="font-family:monospace;font-size:0.82rem;">${escHtml(s.batch_number)}</td>
+      <td>${escHtml(s.expiry_date)}</td>
+      <td>${parseInt(s.quantity).toLocaleString()}</td>
+      <td>${badge}</td>
+      <td>${action}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('stock-list').innerHTML = html;
+}
+
+function requestMore(medName) {
+  sessionStorage.setItem('prefill_medicine', medName);
+  location.href = 'create_request.html';
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+</script>
+</body>
+</html>

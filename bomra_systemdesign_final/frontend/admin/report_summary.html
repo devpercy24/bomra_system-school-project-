@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Summary Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>System Summary Report</h1>
+  </div>
+  <div id="summary"><p class="state-msg">Loading summary...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+apiGet('api/reports/statistics.php?type=summary')
+  .then(data => {
+    const div = document.getElementById('summary');
+    if (data.status !== 'success') { div.innerHTML = '<p class="state-msg">Failed to load report.</p>'; return; }
+    const s = data.data;
+    div.innerHTML = `
+      <div class="page-section">
+        <div class="page-section__title">Users</div>
+        <div class="summary-grid">
+          <div class="summary-item"><div class="summary-item__label">Total Users</div><div class="summary-item__value">${s.total_users}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Suppliers</div><div class="summary-item__value">${s.total_suppliers}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Facilities</div><div class="summary-item__value">${s.total_facilities}</div></div>
+        </div>
+      </div>
+      <div class="page-section">
+        <div class="page-section__title">Medicine Applications</div>
+        <div class="summary-grid">
+          <div class="summary-item"><div class="summary-item__label">Pending</div><div class="summary-item__value">${s.pending_apps}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Approved</div><div class="summary-item__value">${s.approved_apps}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Rejected</div><div class="summary-item__value">${s.rejected_apps}</div></div>
+        </div>
+      </div>
+      <div class="page-section">
+        <div class="page-section__title">Inspections</div>
+        <div class="summary-grid">
+          <div class="summary-item"><div class="summary-item__label">Total Inspections</div><div class="summary-item__value">${s.total_inspections}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Failed Inspections</div><div class="summary-item__value">${s.failed_inspections}</div></div>
+        </div>
+      </div>
+      <div class="page-section">
+        <div class="page-section__title">Licenses &amp; Safety</div>
+        <div class="summary-grid">
+          <div class="summary-item"><div class="summary-item__label">Active Licenses</div><div class="summary-item__value">${s.active_licenses}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Drug Reaction Reports</div><div class="summary-item__value">${s.drug_reactions}</div></div>
+          <div class="summary-item"><div class="summary-item__label">Expired Stock Batches</div><div class="summary-item__value">${s.expired_stock_batches}</div></div>
+        </div>
+      </div>`;
+  })
+  .catch(() => { document.getElementById('summary').innerHTML = '<p class="state-msg">Error loading report.</p>'; });
+</script>
+</body>
+</html>

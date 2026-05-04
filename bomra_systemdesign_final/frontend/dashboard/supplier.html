@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Supplier Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="dash-nav">
+  <div class="dash-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="dash-nav__right">
+    <span class="dash-nav__welcome" id="welcome-msg">Supplier</span>
+    <button class="dash-nav__logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main class="dash-main dash-main--md">
+  <div class="dash-header">
+    <h1>Supplier Dashboard</h1>
+    <p>Manage medicine registrations and facility deliveries</p>
+  </div>
+
+  <div class="notice">
+    <strong>Delivery workflow:</strong> Create delivery &rarr; Add items to delivery &rarr; Mark delivery complete. Complete steps in order.
+  </div>
+
+  <!-- Open requests notification -->
+  <div id="open-requests-notice" class="notice--blue" style="display:none;">
+    <div>
+      <div class="notice--blue__title" id="open-req-title">Facility Supply Requests</div>
+      <div class="notice--blue__sub" id="open-req-sub">Loading&#8230;</div>
+    </div>
+    <a class="action-link action-link--blue" href="../supplier/create_delivery.html" style="flex-shrink:0;">View Requests &#8594;</a>
+  </div>
+
+  <!-- Recent deliveries -->
+  <div id="recent-deliveries-wrap" style="margin-bottom:1.5rem;display:none;">
+    <div class="section-label-text">Your Recent Deliveries</div>
+    <div id="recent-deliveries"></div>
+  </div>
+
+  <div class="sections-grid">
+    <!-- Medicine Registration -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Medicine Registration</h2>
+        <p>Register batches and submit for BoMRA review</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../supplier/add_batch.html">Add a Medicine Batch <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../supplier/submit_application.html">Submit Registration Application <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Deliveries -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Deliveries</h2>
+        <p>Respond to facility supply requests in three steps</p>
+      </div>
+      <div class="stepper">
+        <a class="step-link" href="../supplier/create_delivery.html">
+          <div class="step-link__num">1</div>
+          <div class="step-link__text">Create a Delivery</div>
+          <span class="step-link__arrow">&#8594;</span>
+        </a>
+        <a class="step-link" href="../supplier/add_delivery_item.html">
+          <div class="step-link__num">2</div>
+          <div class="step-link__text">Add Item to Delivery</div>
+          <span class="step-link__arrow">&#8594;</span>
+        </a>
+        <a class="step-link" href="../supplier/complete_delivery.html">
+          <div class="step-link__num">3</div>
+          <div class="step-link__text">Complete the Delivery</div>
+          <span class="step-link__arrow">&#8594;</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('supplier');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+apiGet('api/supplier/get_open_requests.php').then(data => {
+  const notice = document.getElementById('open-requests-notice');
+  const title  = document.getElementById('open-req-title');
+  const sub    = document.getElementById('open-req-sub');
+  notice.style.display = 'flex';
+  if (data.status === 'success' && data.data.length) {
+    const n = data.data.length;
+    title.textContent = n + ' Open Request' + (n!==1?'s':'') + ' from Facilities';
+    sub.textContent   = 'Facilities are waiting for medicine deliveries. Click to view and fulfil.';
+  } else {
+    notice.style.background = '#f8fafc';
+    notice.style.borderColor = '#e2e8f0';
+    notice.style.borderLeftColor = '#94a3b8';
+    title.textContent = 'No Open Requests';
+    sub.textContent   = 'No facilities are currently requesting stock.';
+  }
+}).catch(()=>{});
+
+apiGet('api/supplier/get_deliveries.php').then(data => {
+  if (data.status !== 'success' || !data.data.length) return;
+  const wrap = document.getElementById('recent-deliveries-wrap');
+  const list = document.getElementById('recent-deliveries');
+  wrap.style.display = 'block';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  list.innerHTML = data.data.slice(0,5).map(d => {
+    const isDelivered = d.status === 'delivered';
+    const cls = isDelivered ? 'badge-status-delivered' : 'badge-status-pending';
+    const lbl = isDelivered ? 'Delivered' : 'Pending';
+    return '<div class="delivery-row">'
+      + '<div><span class="delivery-row__label">Delivery #'+d.delivery_id+'</span>'
+      + '<span class="delivery-row__meta">'+esc(d.facility_name||'—')+' &middot; '+(d.item_count||0)+' item'+(d.item_count!=1?'s':'')+'</span></div>'
+      + '<span class="'+cls+'">'+lbl+'</span>'
+      + '</div>';
+  }).join('');
+}).catch(()=>{});
+</script>
+</body>
+</html>

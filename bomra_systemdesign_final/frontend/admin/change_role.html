@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Change User Role</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Change User Role</h1>
+  </div>
+  <div class="page-desc">
+    Use the dropdown next to any user to instantly assign a new role. Admin roles cannot be assigned through this form.
+  </div>
+  <div id="users-list" class="table-wrap"><p class="state-msg">Loading users...</p></div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+
+async function changeRole(userId, selectEl) {
+  const role = selectEl.value;
+  const originalValue = selectEl.dataset.original;
+  if (role === originalValue) return;
+  const statusEl = selectEl.parentElement.querySelector('.saving-spinner');
+  if (statusEl) statusEl.textContent = 'Saving\u2026';
+  selectEl.disabled = true;
+  try {
+    const data = await apiPost('api/admin/manage_users.php', { user_id: parseInt(userId), role: role });
+    if (data.status === 'success') {
+      selectEl.dataset.original = role;
+      const row = selectEl.closest('tr');
+      const badge = row ? row.querySelector('.role-badge') : null;
+      if (badge) { badge.className = 'badge badge-' + role + ' role-badge'; badge.textContent = role; }
+      if (statusEl) { statusEl.textContent = '\u2713 Saved'; setTimeout(() => { if(statusEl) statusEl.textContent = ''; }, 2000); }
+    } else {
+      alert(data.message || 'Failed to update role.');
+      selectEl.value = originalValue;
+      if (statusEl) statusEl.textContent = '';
+    }
+  } catch(e) {
+    alert('Network error: ' + e.message);
+    selectEl.value = originalValue;
+    if (statusEl) statusEl.textContent = '';
+  } finally {
+    selectEl.disabled = false;
+  }
+}
+
+async function loadUsers() {
+  const div = document.getElementById('users-list');
+  div.innerHTML = '<p class="state-msg">Loading...</p>';
+  try {
+    const data = await apiGet('api/admin/manage_users.php');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No users found.</p>';
+      return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Current Role</th><th>Registered</th><th>Change Role</th></tr></thead><tbody>';
+    data.data.forEach(u => {
+      const isAdmin = u.role === 'admin';
+      const allRoles = ['supplier','facility','inspector'];
+      const roleControl = isAdmin
+        ? '<em style="font-size:0.8rem;color:var(--text-light)">Admin &mdash; cannot change</em>'
+        : `<div class="role-actions">
+            <select class="inline-role-select" data-original="${u.role}" onchange="changeRole(${u.user_id}, this)">
+              ${allRoles.map(r => `<option value="${r}"${r===u.role?' selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
+            </select>
+            <span class="saving-spinner"></span>
+           </div>`;
+      html += `<tr>
+        <td>${u.user_id}</td>
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td><span class="badge badge-${u.role} role-badge">${u.role}</span></td>
+        <td>${u.created_at}</td>
+        <td>${roleControl}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<p class="state-msg">Failed to load users. Please try again.</p>';
+  }
+}
+loadUsers();
+</script>
+</body>
+</html>

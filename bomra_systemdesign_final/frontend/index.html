@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA — Botswana Medicines Regulatory Authority</title>
+  <link rel="stylesheet" href="css/bomra.css">
+</head>
+<body>
+
+  
+  <nav class="nav">
+    <div class="nav__brand">
+      <div class="nav__logo-mark"><img src="images/logo.png" alt="BoMRA Logo" class="nav__logo-img"></div>
+      <div class="nav__name">
+      </div>
+    </div>
+
+    <div class="nav__links">
+      <a href="#who-we-serve" class="nav__link">Who We Serve</a>
+      <a href="#how-it-works" class="nav__link">How It Works</a>
+      <a href="#about" class="nav__link">About BoMRA</a>
+    </div>
+
+    <div class="nav__cta">
+      <a href="login.html" class="btn btn--outline">Sign In</a>
+      <a href="register.html" class="btn btn--gold">Register</a>
+    </div>
+  </nav>
+
+  
+  <section class="hero">
+    <div class="hero__bg"><img src="images/doctors.jpg" alt=""></div>
+  </section>
+
+  
+  
+  <section id="who-we-serve">
+    <div class="split reveal">
+      <div class="split__image">
+        <img src="images/morning.jpg" alt="Pharmaceutical supply chain">
+        <div class="split__image-overlay"></div>
+      </div>
+      <div class="split__content split__content--cream">
+        <span class="section-label">Pharmaceutical Suppliers</span>
+        <h2 class="section-title">Register Batches. Submit Applications. Manage Deliveries.</h2>
+        <p class="section-lead">
+          Pharmaceutical suppliers rely on BoMRA's platform to bring safe medicines to market.
+          From registering a new batch to tracking regulatory approval, everything is managed in one place.
+        </p>
+        <ul class="split__list">
+          <li class="split__list-item">Add medicine batches with full manufacturer and expiry details</li>
+          <li class="split__list-item">Submit registration applications for regulatory review</li>
+          <li class="split__list-item">Create and manage deliveries to licensed facilities</li>
+          <li class="split__list-item">Track approval status and receive certificates digitally</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  
+  <div class="split split--reverse reveal">
+    <div class="split__image">
+      <img src="images/pharmacy.jpg" alt="Pharmacy interior">
+      <div class="split__image-overlay"></div>
+    </div>
+    <div class="split__content split__content--dark">
+      <span class="section-label">Facilities &amp; Pharmacies</span>
+      <h2 class="section-title section-title--white">Monitor Stock. Request Supplies. Report Reactions.</h2>
+      <p class="section-lead">
+        Licensed pharmacies and health facilities gain full visibility into their stock levels,
+        can place supply requests and report adverse drug reactions  all within a secure,
+        role-controlled environment.
+      </p>
+      <ul class="split__list">
+        <li class="split__list-item">View real-time stock with automatic expiry status flags</li>
+        <li class="split__list-item">Place and track supply requests to approved suppliers</li>
+        <li class="split__list-item">Submit adverse drug reaction reports directly from the platform</li>
+        <li class="split__list-item">Maintain compliance with BoMRA licensing requirements</li>
+      </ul>
+    </div>
+  </div>
+
+  
+  <section class="tabs-section" id="roles">
+    <div class="container">
+      <div class="tabs-header reveal">
+        <span class="section-label">Platform Roles</span>
+        <h2 class="section-title">Built for Every Stakeholder</h2>
+        <p class="section-lead section-lead--center">
+          Each user type gets a tailored experience with tools and views specific to their mandate.
+        </p>
+      </div>
+
+      <div class="tabs-nav" role="tablist">
+        <button class="tab-btn active" onclick="switchTab(event,'tab-inspector')" role="tab">Inspectors</button>
+        <button class="tab-btn" onclick="switchTab(event,'tab-admin')" role="tab">Administrators</button>
+        <button class="tab-btn" onclick="switchTab(event,'tab-supplier')" role="tab">Suppliers</button>
+        <button class="tab-btn" onclick="switchTab(event,'tab-facility')" role="tab">Facilities</button>
+      </div>
+
+      <div id="tab-inspector" class="tab-panel active">
+        <div class="tab-panel__image">
+          <img src="images/inspection.jpg" alt="Inspector at work">
+        </div>
+        <div class="tab-panel__body">
+          <h3 class="tab-panel__title">Inspection Management</h3>
+          <p class="tab-panel__desc">
+            BoMRA-appointed inspectors use the platform to schedule and record pharmacy inspections,
+            document findings and compliance status and review adverse drug reaction reports to
+            support public health oversight across Botswana.
+          </p>
+          <div class="feature-chips">
+            <span class="chip chip--teal">Schedule Inspections</span>
+            <span class="chip chip--teal">Record Findings</span>
+            <span class="chip chip--teal">View Reaction Reports</span>
+            <span class="chip">Pass / Fail Status</span>
+            <span class="chip">Inspection History</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-admin" class="tab-panel">
+        <div class="tab-panel__image">
+          <img src="images/documents.jpg" alt="Administrator reviewing documents">
+        </div>
+        <div class="tab-panel__body">
+          <h3 class="tab-panel__title">Regulatory Administration</h3>
+          <p class="tab-panel__desc">
+            BoMRA administrators are the backbone of the regulatory process. They review and
+            approve medicine registration applications, issue and manage operating licenses,
+            oversee all user accounts and generate comprehensive regulatory reports.
+          </p>
+          <div class="feature-chips">
+            <span class="chip chip--teal">Approve Applications</span>
+            <span class="chip chip--teal">Issue Licenses</span>
+            <span class="chip chip--teal">Manage Users</span>
+            <span class="chip">Regulatory Reports</span>
+            <span class="chip">Expired Stock Alerts</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-supplier" class="tab-panel">
+        <div class="tab-panel__image">
+          <img src="images/supplies.jpg" alt="Medicine supply warehouse">
+        </div>
+        <div class="tab-panel__body">
+          <h3 class="tab-panel__title">Supply Chain &amp; Registration</h3>
+          <p class="tab-panel__desc">
+            Suppliers register new medicine batches, submit them for regulatory approval,
+            and once certified, fulfil delivery orders to licensed facilities.
+            Every batch is traced from registration to distribution.
+          </p>
+          <div class="feature-chips">
+            <span class="chip chip--teal">Batch Registration</span>
+            <span class="chip chip--teal">Application Submission</span>
+            <span class="chip chip--teal">Delivery Management</span>
+            <span class="chip">Certificates</span>
+            <span class="chip">Approval Tracking</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-facility" class="tab-panel">
+        <div class="tab-panel__image">
+          <img src="images/marina.jpg" alt="Pharmacy stock management">
+        </div>
+        <div class="tab-panel__body">
+          <h3 class="tab-panel__title">Stock &amp; Compliance</h3>
+          <p class="tab-panel__desc">
+            Pharmacies and health centres monitor their medicine inventory with real-time expiry
+            status indicators, submit supply requests when stock runs low and report any
+            adverse drug reactions observed in their patient populations.
+          </p>
+          <div class="feature-chips">
+            <span class="chip chip--teal">Stock Overview</span>
+            <span class="chip chip--teal">Expiry Alerts</span>
+            <span class="chip chip--teal">Supply Requests</span>
+            <span class="chip">ADR Reporting</span>
+            <span class="chip">License Compliance</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <section class="section section--dark" id="how-it-works">
+    <div class="container">
+      <div class="reveal" style="max-width:560px">
+        <span class="section-label">How It Works</span>
+        <h2 class="section-title section-title--white">From Registration to Distribution</h2>
+        <p class="section-lead">
+          A streamlined four-step process ensures every medicine reaching Botswana's
+          facilities is safe, approved and traceable.
+        </p>
+      </div>
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step__num">01</div>
+          <div class="step__title">Register &amp; Apply</div>
+          <p class="step__desc">Suppliers register a medicine batch and submit it for BoMRA regulatory review.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <div class="step__title">Review &amp; Approve</div>
+          <p class="step__desc">BoMRA administrators assess the application and issue a certificate upon approval.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <div class="step__title">Deliver &amp; Stock</div>
+          <p class="step__desc">Certified batches are delivered to licensed facilities whose stock is updated automatically.</p>
+        </div>
+        <div class="step">
+          <div class="step__num">04</div>
+          <div class="step__title">Monitor &amp; Report</div>
+          <p class="step__desc">Inspectors conduct site visits; facilities report adverse reactions; administrators generate reports.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <section class="section section--white reveal">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:2.5rem;">
+        <span class="section-label">Our Mission</span>
+        <h2 class="section-title">Safe Medicines for Every Motswana</h2>
+      </div>
+      <div class="mosaic">
+        <div class="mosaic__item">
+          <img src="images/prevention.jpg" alt="Medicines quality control">
+          <div class="mosaic__caption">Quality Control</div>
+        </div>
+        <div class="mosaic__item">
+          <img src="images/mokento.jpg" alt="Healthcare">
+          <div class="mosaic__caption">Public Health</div>
+        </div>
+        <div class="mosaic__item">
+          <img src="images/labs.jpg" alt="Medical laboratory">
+          <div class="mosaic__caption">Lab Standards</div>
+        </div>
+        <div class="mosaic__item">
+          <img src="images/drip.jpg" alt="Hospital facility">
+          <div class="mosaic__caption">Licensed Facilities</div>
+        </div>
+        <div class="mosaic__item">
+          <img src="images/grandpa.jpg" alt="Regulatory compliance">
+          <div class="mosaic__caption">Regulatory Oversight</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <section class="about-strip" id="about">
+    <div class="container reveal">
+      <div class="about-layout">
+        <div>
+          <span class="section-label">About BoMRA</span>
+          <h2 class="section-title">Protecting Botswana's Medicine Supply</h2>
+          <p style="line-height:1.8; margin-bottom:1.5rem; font-size:0.97rem;">
+            The Botswana Medicines Regulatory Authority is the national body responsible for
+            ensuring that all medicines circulating in Botswana meet standards of
+            safety, efficacy and quality.
+          </p>
+          <p style="line-height:1.8; font-size:0.97rem;">
+            This digital platform supports BoMRA's mandate by bringing the full regulatory
+            lifecycle online reducing paperwork, improving traceability and protecting public health.
+          </p>
+        </div>
+        <div class="about-grid">
+          <div class="about-feature-card about-feature-card--teal">
+            <div class="about-feature-card__title">Medicine Safety</div>
+            <p class="about-feature-card__desc">Every batch approved by BoMRA meets internationally recognised safety and efficacy standards before reaching patients.</p>
+          </div>
+          <div class="about-feature-card about-feature-card--gold">
+            <div class="about-feature-card__title">Full Traceability</div>
+            <p class="about-feature-card__desc">From registration to delivery, every medicine is traceable  enabling rapid responses to adverse events or recalls.</p>
+          </div>
+          <div class="about-feature-card about-feature-card--blue">
+            <div class="about-feature-card__title">Regulatory Compliance</div>
+            <p class="about-feature-card__desc">Role-based access ensures each stakeholder only interacts with the functions relevant to their regulatory mandate.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  
+  <footer class="footer">
+    <div class="footer__brand">BoMRA Digital Management System <br>
+  BY: MPHOYAME NTAKHWA; YOLISWA MAPHORISA; PATSO LEKHOLANE; PERCY MAJEREMANE;
+
+    </div>
+    <div class="footer__copy">&copy; 2026 Botswana Medicines Regulatory Authority. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    function switchTab(event, panelId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById(panelId).classList.add('active');
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

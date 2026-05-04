@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Complete Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Complete a Delivery</h1>
+  </div>
+  <div class="page-desc">
+    Select a pending delivery below to mark it as complete. This will update the facility's stock automatically and cannot be undone. Ensure all items have been added first.
+  </div>
+
+  <div id="success-panel" class="success-panel">
+    <h3>Delivery Completed</h3>
+    <p id="success-msg">The facility's stock has been updated.</p>
+    <div class="form-actions" style="margin-top:1rem;">
+      <button class="btn btn-primary" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+      <button class="btn btn-secondary" onclick="resetPage()">Complete Another Delivery</button>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="section-label-text">Your Pending Deliveries</div>
+    <div class="delivery-list" id="delivery-list"><p class="state-msg">Loading your deliveries&#8230;</p></div>
+
+    <div class="confirm-panel confirm-panel--yellow" id="confirm-panel">
+      <h3>&#9888; Confirm Completion</h3>
+      <p id="confirm-detail">Completing this delivery will update the facility's stock and cannot be undone.</p>
+      <div class="form-actions" style="margin-top:1rem;">
+        <button class="btn btn-primary" onclick="doComplete()">Confirm and Mark as Delivered</button>
+        <button class="btn btn-secondary" onclick="clearSelection()">Cancel</button>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border);">
+      <div class="section-label-text">Enter Delivery ID Manually</div>
+      <div class="manual-row">
+        <input type="number" id="manual-id" class="form-control" placeholder="Delivery ID" min="1" style="max-width:160px;">
+        <button class="btn btn-secondary" onclick="setManual()">Select This Delivery</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+guardPage('supplier');
+
+let selectedDeliveryId = parseInt(sessionStorage.getItem('last_delivery_id')||'0');
+
+async function loadDeliveries() {
+  const list = document.getElementById('delivery-list');
+  try {
+    const data = await apiGet('api/supplier/get_deliveries.php');
+    const pending = (data.status==='success'?data.data:[]).filter(d=>d.status!=='delivered');
+    if (!pending.length) {
+      list.innerHTML='<div class="empty-notice">&#10003; No pending deliveries. All your deliveries have been completed.</div>';
+    } else {
+      list.innerHTML = pending.map(d => {
+        const isCurrent = selectedDeliveryId && d.delivery_id == selectedDeliveryId;
+        return `<div class="delivery-card${isCurrent?' selected':''}" id="dc_${d.delivery_id}" onclick="selectDelivery(${d.delivery_id},'${escJs(d.facility_name||'')}',${d.item_count||0})">
+          <div class="delivery-card__main">
+            <div class="delivery-card__id">Delivery #${d.delivery_id}</div>
+            <div class="delivery-card__sub">${escHtml(d.facility_name||'—')} &middot; ${d.item_count||0} item${d.item_count!=1?'s':''} &middot; Request #${d.request_id}</div>
+          </div>
+          <span class="badge-shipped-sm">Pending</span>
+        </div>`;
+      }).join('');
+    }
+    // Auto-select if we have a saved ID
+    if (selectedDeliveryId) {
+      const match = pending.find(d=>d.delivery_id==selectedDeliveryId);
+      if (match) selectDelivery(match.delivery_id, match.facility_name||'', match.item_count||0);
+    }
+  } catch(e) {
+    list.innerHTML='<p class="state-msg">Could not load deliveries. Please try refreshing.</p>';
+  }
+}
+
+function selectDelivery(id, facility, itemCount) {
+  selectedDeliveryId = id;
+  document.querySelectorAll('.delivery-card').forEach(c=>c.classList.remove('selected'));
+  const card = document.getElementById('dc_'+id);
+  if (card) card.classList.add('selected');
+  document.getElementById('confirm-detail').innerHTML =
+    `You are about to complete <strong>Delivery #${id}</strong> for <strong>${escHtml(facility)}</strong> with ${itemCount} item${itemCount!=1?'s':''}. This will update the facility's stock and <strong>cannot be undone</strong>.`;
+  document.getElementById('confirm-panel').style.display='block';
+  document.getElementById('confirm-panel').scrollIntoView({behavior:'smooth'});
+}
+
+function clearSelection() {
+  selectedDeliveryId = 0;
+  document.querySelectorAll('.delivery-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('confirm-panel').style.display='none';
+}
+
+function setManual() {
+  const val = parseInt(document.getElementById('manual-id').value);
+  if (!val||val<1) { alert('Please enter a valid Delivery ID.'); return; }
+  selectedDeliveryId = val;
+  sessionStorage.setItem('last_delivery_id', val);
+  selectDelivery(val, 'Delivery #'+val, '?');
+}
+
+async function doComplete() {
+  if (!selectedDeliveryId) { alert('No delivery selected.'); return; }
+  try {
+    const data = await apiPost('api/supplier/complete_delivery.php', {delivery_id:selectedDeliveryId});
+    if (data.status==='success') {
+      sessionStorage.removeItem('last_delivery_id');
+      document.getElementById('success-msg').textContent = data.message || 'Delivery #'+selectedDeliveryId+' completed. The facility\'s stock has been updated.';
+      document.getElementById('main-content').style.display='none';
+      document.getElementById('success-panel').style.display='block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else { alert(data.message||'Failed to complete delivery.'); }
+  } catch(e) { alert('Network error: '+e.message); }
+}
+
+function resetPage() {
+  selectedDeliveryId = 0;
+  document.getElementById('success-panel').style.display='none';
+  document.getElementById('main-content').style.display='block';
+  document.getElementById('confirm-panel').style.display='none';
+  loadDeliveries();
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+loadDeliveries();
+</script>
+</body>
+</html>

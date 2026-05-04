@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA — Sign In</title>
+  <link rel="stylesheet" href="css/bomra.css">
+</head>
+<body>
+
+  <div class="login-page">
+
+    
+    <div class="login-bg-grid">
+      <div class="login-bg-grid__cell">
+        <img src="images/gaborone.jpeg" alt="">
+      </div>
+      <div class="login-bg-grid__cell">
+        <img src="images/kalafi.jpg" alt="">
+      </div>
+      <div class="login-bg-grid__cell">
+        <img src="images/testhiv.jpg" alt="">
+      </div>
+      <div class="login-bg-grid__cell">
+        <img src="images/sabrana.jpg" alt="">
+      </div>
+    </div>
+
+    <!-- Floating centered card -->
+    <div class="login-card">
+
+      <div class="login-card__top">
+        <div class="login-card__brand">
+          <div class="login-card__logo"><img src="images/logo.png" alt="BoMRA Logo" class="login-logo-img"></div>
+          <div class="login-card__brand-name">
+            BoMRA
+            <span>Digital System</span>
+          </div>
+        </div>
+        <a href="index.html" class="login-card__back">Home</a>
+      </div>
+
+      <h1 class="login-card__heading">Sign in</h1>
+      <p class="login-card__sub">
+        No account yet? <a href="register.html">Register here</a>
+      </p>
+
+      <div class="field">
+        <label class="field__label" for="email">Email Address</label>
+        <input class="field__input" type="email" id="email" name="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="password">Password</label>
+        <input class="field__input" type="password" id="password" name="password" placeholder="Your password" required>
+      </div>
+
+      <button class="btn btn--primary btn--lg auth-submit" onclick="login()">
+        Sign In
+      </button>
+
+      <p style="text-align:center; margin-top:1rem; font-size:0.84rem;">
+        <a href="forgot_password.html" style="color:var(--teal);">Forgot your password?</a>
+      </p>
+
+      <div class="login-card__footer">
+        Admin accounts are not self-registered.<br>
+        Contact your BoMRA administrator for access.
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

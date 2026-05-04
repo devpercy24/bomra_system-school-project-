@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="dash-nav">
+  <div class="dash-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="dash-nav__right">
+    <span class="dash-nav__welcome" id="welcome-msg">Administrator</span>
+    <button class="dash-nav__logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main class="dash-main">
+  <div class="dash-header">
+    <h1>Admin Dashboard</h1>
+    <p>Regulatory oversight across applications, licenses, users and reports</p>
+  </div>
+
+  <div class="stat-row stat-row--4">
+    <div class="stat-card">
+      <div class="stat-card__label">Applications</div>
+      <div class="stat-card__value" id="stat-apps">—</div>
+    </div>
+    <div class="stat-card stat-card--teal">
+      <div class="stat-card__label">Active Licenses</div>
+      <div class="stat-card__value" id="stat-licenses">—</div>
+    </div>
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__label">Pending Review</div>
+      <div class="stat-card__value" id="stat-pending">—</div>
+    </div>
+    <div class="stat-card stat-card--blue">
+      <div class="stat-card__label">Registered Users</div>
+      <div class="stat-card__value" id="stat-users">—</div>
+    </div>
+  </div>
+
+  <div class="sections-grid">
+    <!-- PENDING APPROVALS -->
+    <div class="section-card section-card--full section-card--gold-border">
+      <div class="section-head section-head--blue">
+        <h2>Pending Medicine Approvals</h2>
+        <p>Batches submitted by suppliers waiting for your decision</p>
+      </div>
+      <div class="section-body" id="pending-approvals-body">
+        <p class="state-msg">Loading…</p>
+      </div>
+    </div>
+
+    <!-- Applications -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Medicine Registration</h2>
+        <p>Review and approve supplier applications</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/applications.html">View All Applications <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/review_application.html">Review an Application <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/issue_certificate.html">Issue a Certificate <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Licenses -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>License Management</h2>
+        <p>Issue, renew or suspend operating licenses</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/licenses.html">View All Licenses <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/manage_license.html">Issue a License <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/manage_license.html">Renew / Suspend a License <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>User Management</h2>
+        <p>View registered users and manage roles</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../admin/users.html">View All Users <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/change_role.html">Change a User Role <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Reports &amp; Statistics</h2>
+        <p>Regulatory compliance and oversight reports</p>
+      </div>
+      <div class="section-body reports-grid">
+        <a class="action-link" href="../admin/report_summary.html">System Summary <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_inspections.html">Inspections <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_expired.html">Expired Medicines <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../admin/report_reactions.html">Drug Reactions <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('admin');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+apiGet('api/reports/statistics.php?type=summary').then(data => {
+  if (data.status === 'success' && data.data) {
+    const d = data.data;
+    if (d.total_applications !== undefined) document.getElementById('stat-apps').textContent = d.total_applications;
+    if (d.active_licenses !== undefined) document.getElementById('stat-licenses').textContent = d.active_licenses;
+    if (d.pending_applications !== undefined) document.getElementById('stat-pending').textContent = d.pending_applications;
+    if (d.total_users !== undefined) document.getElementById('stat-users').textContent = d.total_users;
+  }
+}).catch(() => {});
+
+async function loadPendingApprovals() {
+  const body = document.getElementById('pending-approvals-body');
+  try {
+    const data = await apiGet('api/admin/get_applications.php');
+    if (data.status !== 'success') {
+      body.innerHTML = '<p class="state-msg" style="color:#b91c1c;">Could not load applications — check you are logged in as an authorised admin.</p>';
+      return;
+    }
+    const all      = data.data || [];
+    const pending  = all.filter(a => a.status === 'pending');
+    const approved = all.filter(a => a.status === 'approved');
+    const rejected = all.filter(a => a.status === 'rejected');
+
+    if (!pending.length) {
+      body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;padding:0.25rem 0;">
+          <p style="font-size:0.88rem;color:#059669;">&#10003; No pending applications — all caught up.</p>
+          <a class="btn btn-sm btn-secondary" href="../admin/applications.html">View All Applications</a>
+        </div>`;
+      return;
+    }
+
+    const preview = pending.slice(0, 3).map(app => `
+      <div class="request-card">
+        <div>
+          <div style="font-weight:600;font-size:0.9rem;color:var(--navy);">${escHtml(app.medicine_name)}</div>
+          <div style="font-size:0.77rem;color:var(--text-mid);margin-top:0.15rem;">
+            Batch <strong>${escHtml(app.batch_number)}</strong> &nbsp;|&nbsp; ${escHtml(app.manufacturer)} &nbsp;|&nbsp;
+            Supplier: ${escHtml(app.supplier_name)} &nbsp;|&nbsp; Qty: ${parseInt(app.quantity||0).toLocaleString()} &nbsp;|&nbsp;
+            Submitted: ${app.submitted_at || '—'}
+          </div>
+        </div>
+        <span class="badge-pending">pending</span>
+      </div>
+    `).join('');
+
+    const more = pending.length > 3 ? `<p style="font-size:0.82rem;color:var(--text-light);margin-top:0.5rem;">…and ${pending.length - 3} more pending.</p>` : '';
+
+    body.innerHTML = `
+      ${preview}
+      ${more}
+      <div style="margin-top:1rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+        <a class="btn btn-primary" href="../admin/applications.html">
+          Review &amp; Approve Applications (${pending.length} pending)
+        </a>
+        <span style="font-size:0.8rem;color:var(--text-light);">
+          ${approved.length} approved &nbsp;|&nbsp; ${rejected.length} rejected
+        </span>
+      </div>`;
+  } catch(e) {
+    body.innerHTML = `<p class="state-msg" style="color:#b91c1c;">Error loading applications: ${e.message}</p>`;
+  }
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+loadPendingApprovals();
+</script>
+</body>
+</html>

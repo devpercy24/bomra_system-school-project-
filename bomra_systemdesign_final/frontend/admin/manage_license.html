@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Manage Licenses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body><nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/admin.html'">Back to Dashboard</button>
+    <h1>Manage Licenses</h1>
+  </div>
+
+  <div class="page-section">
+    <div class="page-section__title">Issue a New License</div>
+    <div class="form-card">
+      <div class="page-desc" style="margin-bottom:1.25rem;">Select the holder type, then choose the user from the dropdown.</div>
+      <div class="form-row">
+        <label for="holder_type">Holder Type</label>
+        <select id="holder_type" required onchange="loadHolderUsers()">
+          <option value="">-- Select --</option>
+          <option value="facility">Facility / Pharmacy</option>
+          <option value="supplier">Supplier</option>
+        </select>
+      </div>
+      <div class="form-row" id="holder-user-row" style="display:none;">
+        <label for="holder_user_select">Select User</label>
+        <select id="holder_user_select" required>
+          <option value="">-- Loading users... --</option>
+        </select>
+        <small id="holder-user-hint"></small>
+      </div>
+      <div class="form-row">
+        <label for="expires_at_issue">Expiry Date</label>
+        <input type="date" id="expires_at_issue">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="issueLicense()">Issue License</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-section">
+    <div class="page-section__title">Existing Licenses</div>
+    <div id="action-panel" class="action-panel" style="display:none;">
+      <h3 id="action-title"></h3>
+      <p id="action-desc"></p>
+      <div id="renew-fields" style="display:none;">
+        <div class="form-row">
+          <label for="expires_at_renew">New Expiry Date</label>
+          <input type="date" id="expires_at_renew">
+        </div>
+      </div>
+      <input type="hidden" id="panel_action">
+      <input type="hidden" id="panel_license_id">
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="submitAction()">Confirm</button>
+        <button class="btn btn-secondary" onclick="closePanel()">Cancel</button>
+      </div>
+    </div>
+    <div id="licenses-list" class="table-wrap"><p class="state-msg">Loading licenses...</p></div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script>
+guardPage("admin");
+let panelMode = null;
+let panelLicenseId = null;
+let allUsers = [];
+
+async function loadHolderUsers() {
+  const type = document.getElementById('holder_type').value;
+  const row = document.getElementById('holder-user-row');
+  const sel = document.getElementById('holder_user_select');
+  const hint = document.getElementById('holder-user-hint');
+  if (!type) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+  sel.innerHTML = '<option value="">-- Loading... --</option>';
+  hint.textContent = '';
+  if (!allUsers.length) {
+    try {
+      const data = await apiGet('api/admin/manage_users.php');
+      if (data.status === 'success') allUsers = data.data;
+    } catch(e) {}
+  }
+  const filtered = allUsers.filter(u => u.role === type);
+  if (!filtered.length) {
+    sel.innerHTML = '<option value="">-- No ' + type + ' users found --</option>';
+    hint.textContent = 'No users with the ' + type + ' role exist yet.';
+    return;
+  }
+  sel.innerHTML = '<option value="">-- Select a user --</option>' +
+    filtered.map(u => `<option value="${u.user_id}">${u.name} (ID: ${u.user_id}) &mdash; ${u.email}</option>`).join('');
+}
+
+function closePanel() {
+  document.getElementById('action-panel').style.display = 'none';
+  panelMode = null; panelLicenseId = null;
+}
+
+function openRenew(licenseId, licenseNumber) {
+  panelMode = 'renew'; panelLicenseId = licenseId;
+  document.getElementById('action-title').textContent = 'Renew License #' + licenseNumber;
+  document.getElementById('action-desc').textContent = 'Set the new expiry date for this license.';
+  document.getElementById('renew-fields').style.display = 'block';
+  document.getElementById('expires_at_renew').value = '';
+  document.getElementById('action-panel').style.display = 'block';
+  document.getElementById('action-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function openSuspend(licenseId, licenseNumber, holderType, holderName) {
+  panelMode = 'suspend'; panelLicenseId = licenseId;
+  document.getElementById('action-title').textContent = 'Suspend License #' + licenseNumber;
+  document.getElementById('action-desc').textContent =
+    'This will immediately deactivate the license for ' + holderType + ' ' + holderName + '. Are you sure?';
+  document.getElementById('renew-fields').style.display = 'none';
+  document.getElementById('action-panel').style.display = 'block';
+  document.getElementById('action-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function submitAction() {
+  if (!panelMode || !panelLicenseId) return;
+  let body = { action: panelMode, license_id: panelLicenseId };
+  if (panelMode === 'renew') {
+    const expires_at = document.getElementById('expires_at_renew').value;
+    if (!expires_at) { alert('New expiry date is required.'); return; }
+    body.expires_at = expires_at;
+  }
+  try {
+    const data = await apiPost('api/admin/manage_license.php', body);
+    alert(data.message || (data.status === 'success' ? 'Done.' : 'Failed.'));
+    if (data.status === 'success') { closePanel(); loadLicenses(); }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+async function issueLicense() {
+  const holder_type = document.getElementById('holder_type').value;
+  const holder_id   = parseInt(document.getElementById('holder_user_select').value);
+  const expires_at  = document.getElementById('expires_at_issue').value;
+  if (!holder_type || !holder_id) { alert('Please select holder type and a user.'); return; }
+  try {
+    const data = await apiPost('api/admin/manage_license.php', { action: 'issue', holder_type, holder_id, expires_at });
+    alert(data.message || (data.status === 'success' ? 'License issued.' : 'Failed.'));
+    if (data.status === 'success') loadLicenses();
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+async function loadLicenses() {
+  const div = document.getElementById('licenses-list');
+  div.innerHTML = '<p class="state-msg">Loading...</p>';
+  try {
+    const data = await apiGet('api/admin/get_licenses.php');
+    if (data.status !== 'success' || !data.data.length) {
+      div.innerHTML = '<p class="state-msg">No licenses found.</p>';
+      return;
+    }
+    let html = '<table class="data-table"><thead><tr><th>ID</th><th>License No.</th><th>Holder Type</th><th>Holder ID</th><th>Status</th><th>Expires</th><th>Issued By</th><th>Issued At</th><th>Actions</th></tr></thead><tbody>';
+    data.data.forEach(lic => {
+      const canAct = lic.status === 'active';
+      const actions = canAct
+        ? `<button class="btn btn-sm btn-secondary" onclick="openRenew(${lic.license_id}, '${lic.license_number}')">Renew</button>
+           <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="openSuspend(${lic.license_id}, '${lic.license_number}', '${lic.holder_type}', ${lic.holder_id})">Suspend</button>`
+        : `<span class="badge badge-${lic.status}">${lic.status}</span>`;
+      html += `<tr>
+        <td>${lic.license_id}</td>
+        <td>${lic.license_number}</td>
+        <td>${lic.holder_type}</td>
+        <td>${lic.holder_id}</td>
+        <td><span class="badge badge-${lic.status}">${lic.status}</span></td>
+        <td>${lic.expires_at || 'N/A'}</td>
+        <td>${lic.issued_by_name}</td>
+        <td>${lic.issued_at}</td>
+        <td>${actions}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<p class="state-msg">Failed to load licenses. Please try again.</p>';
+  }
+}
+loadLicenses();
+</script>
+</body>
+</html>

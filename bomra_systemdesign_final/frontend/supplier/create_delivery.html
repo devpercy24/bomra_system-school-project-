@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Create Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Create a Delivery</h1>
+  </div>
+  <div class="page-desc">
+    Select an open supply request from a facility below and create a delivery against it. Once created you will receive a <strong>Delivery ID</strong> to add items and complete the delivery.
+  </div>
+
+  <div id="success-panel" class="success-panel">
+    <h3>Delivery Created</h3>
+    <p>Your Delivery ID is:</p>
+    <div class="delivery-id-badge" id="new-delivery-id">—</div>
+    <p style="margin-top:0.5rem;">This ID is saved automatically. Click below to add medicine items to this delivery.</p>
+    <div class="form-actions" style="margin-top:1rem;">
+      <button class="btn btn-primary" onclick="location.href='add_delivery_item.html'">Next: Add Items &#8594;</button>
+      <button class="btn btn-secondary" onclick="resetForm()">Create Another Delivery</button>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="section-label-text">
+      Open Supply Requests from Facilities
+    </div>
+    <div id="requests-grid"><p class="state-msg">Loading open requests&#8230;</p></div>
+
+    <div id="confirm-panel" class="confirm-panel">
+      <h3>Create Delivery for this Request?</h3>
+      <p id="confirm-detail"></p>
+      <div class="form-actions" style="margin-top:1rem;">
+        <button class="btn btn-primary" onclick="confirmCreate()">Yes, Create Delivery</button>
+        <button class="btn btn-secondary" onclick="clearSelection()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+guardPage('supplier');
+
+let selectedRequestId = null;
+let selectedFacility  = '';
+
+async function loadRequests() {
+  const grid = document.getElementById('requests-grid');
+  try {
+    const data = await apiGet('api/supplier/get_open_requests.php');
+    if (data.status !== 'success' || !data.data.length) {
+      grid.innerHTML = '<div class="empty-notice">No open supply requests from facilities at this time. Check back later.</div>';
+      return;
+    }
+    grid.innerHTML = '<div class="request-grid-wrap">' + data.data.map(r => `
+      <div class="delivery-req-card" id="rc_${r.request_id}">
+        <div class="delivery-req-card__id">Request #${r.request_id}</div>
+        <div class="delivery-req-card__facility">${escHtml(r.facility_name||'—')}</div>
+        ${r.facility_location ? `<div class="delivery-req-card__location">${escHtml(r.facility_location)}</div>` : ''}
+        <div class="delivery-req-card__date">Requested ${new Date(r.created_at).toLocaleDateString('en-BW',{day:'numeric',month:'short',year:'numeric'})}</div>
+        <div class="rc-actions">
+          <button class="btn btn-primary" style="width:100%;" onclick="selectRequest(${r.request_id},'${escJs(r.facility_name||'')}')">Fulfil This Request</button>
+        </div>
+      </div>`).join('') + '</div>';
+  } catch(e) {
+    grid.innerHTML = '<p class="state-msg">Could not load requests. Please try refreshing.</p>';
+  }
+}
+
+function selectRequest(id, facility) {
+  selectedRequestId = id;
+  selectedFacility  = facility;
+  // Highlight selected card
+  document.querySelectorAll('.request-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('rc_'+id);
+  if (card) card.classList.add('selected');
+  document.getElementById('confirm-detail').textContent =
+    'You are creating a delivery for Request #'+id+' from '+facility+'.';
+  document.getElementById('confirm-panel').style.display = 'block';
+  document.getElementById('confirm-panel').scrollIntoView({behavior:'smooth'});
+}
+
+function clearSelection() {
+  selectedRequestId = null;
+  selectedFacility  = '';
+  document.querySelectorAll('.request-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('confirm-panel').style.display = 'none';
+}
+
+async function confirmCreate() {
+  if (!selectedRequestId) { alert('Please select a request first.'); return; }
+  try {
+    const data = await apiPost('api/supplier/create_delivery.php', { request_id: selectedRequestId });
+    if (data.status === 'success') {
+      const did = data.delivery_id;
+      sessionStorage.setItem('last_delivery_id', did);
+      document.getElementById('new-delivery-id').textContent = '#'+did;
+      document.getElementById('main-content').style.display = 'none';
+      document.getElementById('success-panel').style.display = 'block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else {
+      alert(data.message || 'Failed to create delivery.');
+    }
+  } catch(e) { alert('Network error: '+e.message); }
+}
+
+function resetForm() {
+  document.getElementById('success-panel').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+  clearSelection();
+  loadRequests();
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+loadRequests();
+</script>
+</body>
+</html>

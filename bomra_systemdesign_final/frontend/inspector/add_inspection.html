@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Record Inspection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/inspector.html'">Back to Dashboard</button>
+    <h1>Record or Schedule a Pharmacy Inspection</h1>
+  </div>
+  <div class="page-desc">
+    Schedule an upcoming inspection or record the outcome of a completed one.
+  </div>
+  <div class="form-card">
+    <!-- Step 1: Pick a facility -->
+    <div class="form-row">
+      <label>Select Facility</label>
+      <div id="facility-list-container" class="facility-list">
+        <p class="facility-loading">Loading facilities...</p>
+      </div>
+      <div id="selected-badge" class="selected-badge"></div>
+    </div>
+
+    <!-- Step 2: Status -->
+    <div class="form-row">
+      <label for="status">Inspection Status</label>
+      <select id="status" required onchange="toggleDateField()">
+        <option value="">-- Select status --</option>
+        <option value="scheduled">Scheduled (upcoming)</option>
+        <option value="passed">Passed</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
+
+    <div id="date-field" class="form-row" style="display:none;">
+      <label for="scheduled_date">Scheduled Date</label>
+      <input type="date" id="scheduled_date">
+      <small>Required when status is "Scheduled".</small>
+    </div>
+
+    <div class="form-row">
+      <label for="notes">Inspection Notes / Findings</label>
+      <textarea id="notes" placeholder="Record your findings, observations, or reason for the result. Required for Failed inspections."></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addInspection()">Submit Inspection Record</button>
+      <button class="btn btn-secondary" onclick="location.href='my_inspections.html'">View My Inspections</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+guardPage('inspector');
+
+let selectedFacilityId = null;
+
+function toggleDateField() {
+  const status = document.getElementById('status').value;
+  document.getElementById('date-field').style.display = status === 'scheduled' ? 'block' : 'none';
+}
+
+function selectFacility(id, name) {
+  selectedFacilityId = id;
+  // Update all buttons
+  document.querySelectorAll('.facility-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.id == id);
+  });
+  // Show badge
+  const badge = document.getElementById('selected-badge');
+  badge.textContent = '✓ Selected: ' + name;
+  badge.classList.add('visible');
+}
+
+async function loadFacilities() {
+  const container = document.getElementById('facility-list-container');
+  try {
+    const data = await apiGet('api/admin/manage_users.php');
+    const facilities = (data.status === 'success' ? data.data : []).filter(u => u.role === 'facility');
+    if (!facilities.length) {
+      container.innerHTML = '<p class="facility-loading">No registered facilities found.</p>';
+      return;
+    }
+    container.innerHTML = facilities.map(u => `
+      <button class="facility-btn" data-id="${u.user_id}" onclick="selectFacility(${u.user_id}, ${JSON.stringify(u.name)})">
+        <span>
+          <span class="fac-name">${u.name}</span>
+          <span class="fac-id">ID: ${u.user_id}</span>
+        </span>
+        <span class="fac-check">✓</span>
+      </button>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = '<p class="facility-loading">Could not load facilities. Please try again.</p>';
+  }
+}
+
+async function addInspection() {
+  const user = guardPage('inspector');
+  if (!user) return;
+  const status         = document.getElementById('status').value;
+  const scheduled_date = document.getElementById('scheduled_date').value;
+  const notes          = document.getElementById('notes').value.trim();
+
+  if (!selectedFacilityId) { alert('Please select a facility.'); return; }
+  if (!status) { alert('Please select an inspection status.'); return; }
+  if (status === 'scheduled' && !scheduled_date) {
+    alert('Scheduled date is required for a scheduled inspection.'); return;
+  }
+  try {
+    const data = await apiPost('api/inspector/add_inspection.php', {
+      facility_id: selectedFacilityId, status, scheduled_date, notes
+    });
+    if (data.status === 'success') {
+      alert('Inspection record saved successfully.');
+      // Reset form
+      selectedFacilityId = null;
+      document.querySelectorAll('.facility-btn').forEach(btn => btn.classList.remove('selected'));
+      document.getElementById('selected-badge').classList.remove('visible');
+      document.getElementById('status').value = '';
+      document.getElementById('scheduled_date').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('date-field').style.display = 'none';
+    } else {
+      alert(data.message || 'Failed to save inspection.');
+    }
+  } catch(e) { alert('Network error: ' + e.message); }
+}
+
+loadFacilities();
+</script>
+</body>
+</html>

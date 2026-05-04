@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Create Supply Request</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/facility.html'">Back to Dashboard</button>
+    <h1>Create Supply Request</h1>
+  </div>
+  <div class="page-desc">
+    Select the medicines your facility needs below, enter the required quantities and submit. Registered suppliers will be notified automatically.
+  </div>
+
+  <div id="shortage-panel" class="shortage-panel" style="display:none;">
+    <h3>&#9888; Stock Shortage Alert</h3>
+    <p class="shortage-panel__sub">These medicines are critically low or expired at your facility:</p>
+    <div id="shortage-list"></div>
+  </div>
+
+  <div id="success-msg" class="success-banner" style="display:none;"></div>
+
+  <div class="form-card">
+    <div class="form-section-title">Select Medicines to Request</div>
+    <div id="medicine-table-wrap"><p class="state-msg">Loading medicines&#8230;</p></div>
+
+    <div class="form-section-title" style="margin-top:1.4rem;">Add a Medicine Not Listed</div>
+    <div class="add-custom">
+      <input class="form-control" type="text" id="custom-med" placeholder="e.g. Metformin 500mg">
+      <input class="qty-input" type="number" id="custom-qty" placeholder="Qty" min="1" style="width:90px;">
+      <button class="btn btn-secondary" onclick="addCustomMedicine()">Add</button>
+    </div>
+    <div id="custom-list" style="display:none;margin-top:0.6rem;">
+      <div class="form-section-title">Custom Additions</div>
+      <div id="custom-items"></div>
+    </div>
+
+    <div class="form-section-title" style="margin-top:1.4rem;">Notes / Urgency (optional)</div>
+    <textarea class="note-input" id="req-notes" rows="3" placeholder="e.g. Urgent — ARV stock depleted. Priority delivery requested."></textarea>
+
+    <div id="selected-summary" class="selected-summary"></div>
+    <div id="report-preview" class="report-preview">
+      <h4>Shortage Report (included with request)</h4>
+      <div id="report-body"></div>
+    </div>
+
+    <div class="form-actions" style="margin-top:1.2rem;">
+      <button class="btn btn-primary" onclick="submitRequest()">Submit Supply Request</button>
+      <button class="btn btn-secondary" onclick="location.href='view_stock.html'">View My Stock</button>
+    </div>
+  </div>
+
+  <div class="status-requests">
+    <div class="form-section-title">Your Recent Supply Requests</div>
+    <div id="req-history"><p class="state-msg" style="font-size:0.84rem;">Loading&#8230;</p></div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('facility');
+
+const COMMON_MEDS = [
+  "Paracetamol 500mg","Amoxicillin 250mg Capsules","Metformin 500mg",
+  "Atenolol 50mg","Amlodipine 5mg","Lisinopril 10mg",
+  "Cotrimoxazole 480mg","Artemether/Lumefantrine 20/120mg",
+  "Tenofovir/Lamivudine/Efavirenz 300/300/600mg","Isoniazid 300mg",
+  "Rifampicin 450mg","Pyrazinamide 500mg","Ethambutol 400mg",
+  "Oral Rehydration Salts","Zinc Sulfate 20mg",
+  "Ferrous Sulfate 200mg","Folic Acid 5mg",
+  "Omeprazole 20mg","Salbutamol Inhaler 100mcg",
+  "Glibenclamide 5mg","Hydrocortisone Injection 100mg"
+];
+
+let stockData = [];
+let selections = {};
+let customMeds = [];
+
+async function init() {
+  try {
+    const sd = await apiGet('api/facility/get_stock.php');
+    if (sd.status === 'success') stockData = sd.data || [];
+  } catch(e) {}
+  renderTable();
+  renderShortagePanel();
+  loadHistory();
+}
+
+function getStockQty(medName) {
+  return stockData
+    .filter(s => s.medicine_name.toLowerCase() === medName.toLowerCase())
+    .reduce((acc, s) => acc + parseInt(s.quantity || 0), 0);
+}
+
+function getStockStatus(qty) {
+  if (qty === 0) return { cls:'badge-shortage', label:'Out of Stock' };
+  if (qty < 50)  return { cls:'badge-low',      label:'Low ('+qty+')' };
+  return               { cls:'badge-ok',         label:'In Stock ('+qty+')' };
+}
+
+function renderTable() {
+  const stockMeds = stockData.map(s => s.medicine_name);
+  const allMeds = [...new Set([...COMMON_MEDS, ...stockMeds])].sort();
+
+  let html = '<table class="medicines-table"><thead><tr>';
+  html += '<th style="width:36px;"></th><th>Medicine</th><th>Current Stock</th><th>Qty to Request</th><th>Reason (optional)</th>';
+  html += '</tr></thead><tbody>';
+
+  allMeds.forEach(name => {
+    const qty = getStockQty(name);
+    const st  = getStockStatus(qty);
+    const id  = 'med_' + name.replace(/[^a-z0-9]/gi,'_');
+    const preChecked = qty === 0;
+    html += `<tr>
+      <td><input type="checkbox" id="chk_${id}" onchange="toggleSelect('${escJs(name)}')" ${preChecked?'checked':''}></td>
+      <td><label for="chk_${id}" style="cursor:pointer;font-weight:500;">${escHtml(name)}</label></td>
+      <td><span class="${st.cls}">${st.label}</span></td>
+      <td><input class="qty-input" type="number" id="qty_${id}" min="1" value="${preChecked?100:''}" placeholder="—" oninput="updateQty('${escJs(name)}',this.value)"></td>
+      <td><input type="text" class="note-input" id="reason_${id}" placeholder="Optional reason" style="height:32px;padding:0.3rem 0.5rem;resize:none;" oninput="updateSummary()"></td>
+    </tr>`;
+    if (preChecked) selections[name] = 100;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('medicine-table-wrap').innerHTML = html;
+  updateSummary();
+}
+
+function toggleSelect(name) {
+  const id  = 'med_' + name.replace(/[^a-z0-9]/gi,'_');
+  const chk = document.getElementById('chk_'+id);
+  const qEl = document.getElementById('qty_'+id);
+  if (chk.checked) selections[name] = parseInt(qEl.value)||100;
+  else delete selections[name];
+  updateSummary();
+}
+
+function updateQty(name, val) {
+  const id  = 'med_' + name.replace(/[^a-z0-9]/gi,'_');
+  const chk = document.getElementById('chk_'+id);
+  if (val && parseInt(val) > 0) { chk.checked = true; selections[name] = parseInt(val); }
+  else { chk.checked = false; delete selections[name]; }
+  updateSummary();
+}
+
+function renderShortagePanel() {
+  const low = stockData.filter(s => parseInt(s.quantity) < 30 || s.expiry_status === 'expired');
+  const oos = COMMON_MEDS.filter(n => getStockQty(n) === 0);
+  const items = [];
+  low.forEach(s => items.push({name:s.medicine_name, reason: s.expiry_status==='expired'?'Batch expired':'Low stock ('+s.quantity+' units)'}));
+  oos.forEach(n => { if (!items.find(i=>i.name===n)) items.push({name:n,reason:'Not in stock'}); });
+  if (!items.length) return;
+  document.getElementById('shortage-panel').style.display = 'block';
+  document.getElementById('shortage-list').innerHTML = items.map(i =>
+    `<div class="shortage-item"><span class="shortage-item__name">${escHtml(i.name)}</span><span class="shortage-item__qty">${escHtml(i.reason)}</span></div>`
+  ).join('');
+}
+
+function updateSummary() {
+  const keys = Object.keys(selections);
+  const total = keys.length + customMeds.length;
+  const sumEl = document.getElementById('selected-summary');
+  const repEl = document.getElementById('report-preview');
+  if (!total) { sumEl.style.display='none'; repEl.style.display='none'; return; }
+  sumEl.style.display = 'block';
+  sumEl.innerHTML = `<span>${total}</span> medicine${total!==1?'s':''} selected for this request`;
+  const shortageKeys = keys.filter(n => getStockQty(n) < 30);
+  if (shortageKeys.length) {
+    repEl.style.display = 'block';
+    let ul = '<ul>';
+    shortageKeys.forEach(n => {
+      const id = 'med_' + n.replace(/[^a-z0-9]/gi,'_');
+      const rEl = document.getElementById('reason_'+id);
+      const r = rEl ? rEl.value.trim() : '';
+      ul += `<li><strong>${escHtml(n)}</strong> — current stock: ${getStockQty(n)} units${r?'; reason: '+escHtml(r):''}</li>`;
+    });
+    ul += '</ul>';
+    document.getElementById('report-body').innerHTML = ul;
+  } else { repEl.style.display='none'; }
+}
+
+function addCustomMedicine() {
+  const name = document.getElementById('custom-med').value.trim();
+  const qty  = parseInt(document.getElementById('custom-qty').value);
+  if (!name) { alert('Please enter a medicine name.'); return; }
+  if (!qty||qty<1) { alert('Please enter a valid quantity.'); return; }
+  customMeds.push({name,qty});
+  document.getElementById('custom-med').value='';
+  document.getElementById('custom-qty').value='';
+  renderCustomList(); updateSummary();
+}
+
+function removeCustom(i) { customMeds.splice(i,1); renderCustomList(); updateSummary(); }
+
+function renderCustomList() {
+  const wrap = document.getElementById('custom-list');
+  if (!customMeds.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  document.getElementById('custom-items').innerHTML = customMeds.map((m,i) =>
+    `<div class="shortage-item" style="background:var(--cream);border-radius:6px;padding:0.5rem 0.8rem;margin-bottom:0.4rem;">
+      <span style="font-weight:500;">${escHtml(m.name)}</span>
+      <span style="color:var(--text-light,#6a7a92);">&times; ${m.qty}</span>
+      <button class="btn btn-secondary" style="padding:0.2rem 0.6rem;font-size:0.78rem;" onclick="removeCustom(${i})">Remove</button>
+    </div>`
+  ).join('');
+}
+
+async function submitRequest() {
+  if (!user) return;
+  const items = [
+    ...Object.keys(selections).map(name => {
+      const id = 'med_' + name.replace(/[^a-z0-9]/gi,'_');
+      const rEl = document.getElementById('reason_'+id);
+      return { medicine: name, quantity: selections[name], reason: rEl?rEl.value.trim():'' };
+    }),
+    ...customMeds.map(m => ({medicine:m.name,quantity:m.qty,reason:''}))
+  ];
+  if (!items.length) { alert('Please select at least one medicine and enter a quantity.'); return; }
+  const notes = document.getElementById('req-notes').value.trim();
+  const shortageLines = items.filter(i => getStockQty(i.medicine) < 30);
+  let reportText = '';
+  if (shortageLines.length) {
+    reportText = '\n\nShortage Report:\n' + shortageLines.map(i =>
+      '- '+i.medicine+' (stock: '+getStockQty(i.medicine)+' units'+(i.reason?' / '+i.reason:'')+')').join('\n');
+  }
+  try {
+    const data = await apiPost('api/facility/create_request.php', { items, notes: notes+reportText });
+    if (data.status==='success') {
+      const id = data.request_id||'—';
+      selections={}; customMeds=[];
+      document.getElementById('req-notes').value='';
+      updateSummary(); renderCustomList(); renderTable(); loadHistory();
+      const msg = document.getElementById('success-msg');
+      msg.style.display='block';
+      msg.innerHTML=`<strong style="color:#15803d;">Supply Request #${id} submitted.</strong><p style="font-size:0.85rem;color:#166534;margin-top:0.3rem;">Suppliers will see this request and can fulfil it. Track the status in "Your Recent Supply Requests" below.</p>`;
+      window.scrollTo({top:0,behavior:'smooth'});
+      setTimeout(()=>{msg.style.display='none';},10000);
+    } else { alert(data.message||'Failed to create supply request.'); }
+  } catch(e) { alert('Network error: '+e.message); }
+}
+
+async function loadHistory() {
+  const wrap = document.getElementById('req-history');
+  try {
+    const data = await apiGet('api/facility/get_requests.php');
+    if (data.status!=='success'||!data.data.length) {
+      wrap.innerHTML='<p class="state-msg" style="font-size:0.84rem;">No requests yet.</p>'; return;
+    }
+    wrap.innerHTML = data.data.map(r => {
+      const s = r.delivery_status;
+      const bc = s==='delivered'?'badge-delivered':s==='shipped'?'badge-shipped':'badge-pending';
+      const sl = s==='delivered'?'Delivered':s==='shipped'?'Supplier Confirmed':'Pending Supplier';
+      return `<div class="request-card">
+        <div>
+          <div class="req-id">Request #${r.request_id}</div>
+          <div class="req-date">${new Date(r.created_at).toLocaleDateString('en-BW',{day:'numeric',month:'short',year:'numeric'})}${r.supplier_name?' &middot; '+escHtml(r.supplier_name):''}</div>
+        </div>
+        <span class="${bc}">${sl}</span>
+      </div>`;
+    }).join('');
+  } catch(e) { wrap.innerHTML='<p class="state-msg" style="font-size:0.84rem;">Could not load history.</p>'; }
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+init();
+</script>
+</body>
+</html>

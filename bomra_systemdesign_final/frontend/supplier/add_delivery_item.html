@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Add Items to Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="page-nav">
+  <div class="page-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+</nav>
+<div class="page-wrap">
+  <div class="page-top">
+    <button class="btn btn-back" onclick="location.href='../dashboard/supplier.html'">Back to Dashboard</button>
+    <h1>Add Items to Delivery</h1>
+  </div>
+  <div class="page-desc">
+    Select approved medicine batches to add to your delivery. You can add multiple batches. When done, proceed to complete the delivery.
+  </div>
+
+  <!-- Delivery ID header -->
+  <div class="delivery-header" id="delivery-header">
+    <div>
+      <div class="delivery-header__label">Current Delivery</div>
+      <div class="delivery-header__id" id="dh-id-display">Loading…</div>
+    </div>
+    <button class="delivery-header__change-btn" onclick="location.href='create_delivery.html'">&#8592; Change Delivery</button>
+  </div>
+
+  <!-- Approved batches -->
+  <div class="section-label-text">
+    Your Approved Medicine Batches
+  </div>
+  <div id="batch-grid"><p class="state-msg">Loading approved batches&#8230;</p></div>
+
+  <!-- Quantity panel (shown after selecting a batch) -->
+  <div class="qty-panel" id="qty-panel">
+    <div class="qty-panel__title" id="qp-title">Selected batch</div>
+    <div class="form-row">
+      <label for="qty-input">Quantity to include in this delivery (units)</label>
+      <input type="number" id="qty-input" class="form-control" min="1" placeholder="e.g. 500" style="max-width:200px;">
+      <small>Available in batch: <strong id="qp-available">—</strong></small>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addItem()">Add to Delivery</button>
+      <button class="btn btn-secondary" onclick="clearBatchSelection()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Items added this session -->
+  <div class="added-items" id="added-items" style="display:none;">
+    <div class="section-label-text">
+      Items Added to This Delivery
+    </div>
+    <div id="added-list"></div>
+    <div class="form-actions" style="margin-top:1rem;">
+      <button class="btn btn-primary" onclick="location.href='complete_delivery.html'">Next: Complete Delivery &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+guardPage('supplier');
+
+let deliveryId = parseInt(sessionStorage.getItem('last_delivery_id')||'0');
+let selectedBatch = null;
+let addedItems = [];
+
+function updateDeliveryHeader() {
+  if (deliveryId) {
+    document.getElementById('dh-id-display').textContent = '#' + deliveryId;
+  } else {
+    document.getElementById('dh-id-display').textContent = 'None. Please create a delivery first.';
+    document.getElementById('batch-grid').innerHTML = '<div class="no-batches"><strong>No active delivery.</strong> Please <a href="create_delivery.html" style="color:var(--blue-light,#2857a4);font-weight:500;">create a delivery</a> first to get started.</div>';
+  }
+}
+
+async function loadBatches() {
+  const grid = document.getElementById('batch-grid');
+  try {
+    const data = await apiGet('api/supplier/get_my_batches.php');
+    const approved = (data.status==='success'?data.data:[]).filter(a=>a.application_status==='approved');
+    if (!approved.length) {
+      grid.innerHTML = '<div class="no-batches"><strong>No approved batches yet.</strong> You need to add a medicine batch and have it approved by BoMRA before you can include it in a delivery. <a href="add_batch.html" style="color:var(--blue-light,#2857a4);font-weight:500;">Add a batch</a> then wait for admin approval.</div>';
+      return;
+    }
+    grid.innerHTML = '<div class="batch-grid-wrap">' + approved.map(a => `
+      <div class="batch-card" id="bc_${a.batch_id}" onclick="selectBatch(${a.batch_id},'${escJs(a.medicine_name||'')}',${a.quantity||0})">
+        <div class="batch-card__name">${escHtml(a.medicine_name||'—')}</div>
+        <div class="batch-card__meta">
+          Manufacturer: ${escHtml(a.manufacturer||'—')}<br>
+          Batch No: ${escHtml(a.batch_number||'—')}<br>
+          Available: ${parseInt(a.quantity||0).toLocaleString()} units
+        </div>
+        <div class="batch-card__id">Batch ID: ${a.batch_id}</div>
+      </div>`).join('') + '</div>';
+  } catch(e) {
+    grid.innerHTML = '<p class="state-msg">Could not load batches. Please try refreshing.</p>';
+  }
+}
+
+function selectBatch(id, name, available) {
+  selectedBatch = {id, name, available};
+  document.querySelectorAll('.batch-card').forEach(c=>c.classList.remove('selected'));
+  const card = document.getElementById('bc_'+id);
+  if (card) card.classList.add('selected');
+  document.getElementById('qp-title').textContent = name + ' (Batch ID '+id+')';
+  document.getElementById('qp-available').textContent = available.toLocaleString()+' units';
+  document.getElementById('qty-input').value = '';
+  document.getElementById('qty-input').max = available;
+  document.getElementById('qty-panel').style.display = 'block';
+  document.getElementById('qty-panel').scrollIntoView({behavior:'smooth'});
+}
+
+function clearBatchSelection() {
+  selectedBatch = null;
+  document.querySelectorAll('.batch-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('qty-panel').style.display = 'none';
+}
+
+async function addItem() {
+  if (!deliveryId) { alert('No Delivery ID set. Please go back and create a delivery first.'); return; }
+  if (!selectedBatch) { alert('Please select a batch first.'); return; }
+  const qty = parseInt(document.getElementById('qty-input').value);
+  if (!qty||qty<1) { alert('Please enter a valid quantity.'); return; }
+  try {
+    const data = await apiPost('api/supplier/add_delivery_item.php', {delivery_id:deliveryId, batch_id:selectedBatch.id, quantity:qty});
+    if (data.status==='success') {
+      addedItems.push({name:selectedBatch.name, batchId:selectedBatch.id, qty});
+      renderAddedItems();
+      clearBatchSelection();
+    } else { alert(data.message||'Failed to add item.'); }
+  } catch(e) { alert('Network error: '+e.message); }
+}
+
+function renderAddedItems() {
+  if (!addedItems.length) { document.getElementById('added-items').style.display='none'; return; }
+  document.getElementById('added-items').style.display='block';
+  document.getElementById('added-list').innerHTML = addedItems.map(i =>
+    `<div class="added-item">
+      <div><span class="added-item__name">${escHtml(i.name)}</span> <span class="added-item__qty">Batch #${i.batchId}</span></div>
+      <span class="added-item__qty">${i.qty.toLocaleString()} units</span>
+    </div>`
+  ).join('');
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+updateDeliveryHeader();
+loadBatches();
+</script>
+</body>
+</html>

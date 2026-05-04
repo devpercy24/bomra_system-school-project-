@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Facility Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="dash-nav">
+  <div class="dash-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="dash-nav__right">
+    <span class="dash-nav__welcome" id="welcome-msg">Facility</span>
+    <button class="dash-nav__logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main class="dash-main dash-main--md">
+  <div class="dash-header">
+    <h1>Facility Dashboard</h1>
+    <p>Stock monitoring, supply requests and adverse reaction reporting</p>
+  </div>
+
+  <div class="stock-bar">
+    <div class="stock-bar__item">
+      <div class="stock-bar__label">Total Stock Lines</div>
+      <div class="stock-bar__value" id="stat-total">—</div>
+    </div>
+    <div class="stock-bar__divider"></div>
+    <div class="stock-bar__item stock-bar__item--warn">
+      <div class="stock-bar__label">Expiring Soon</div>
+      <div class="stock-bar__value" id="stat-expiring">—</div>
+    </div>
+    <div class="stock-bar__divider"></div>
+    <div class="stock-bar__item stock-bar__item--danger">
+      <div class="stock-bar__label">Expired</div>
+      <div class="stock-bar__value" id="stat-expired">—</div>
+    </div>
+  </div>
+
+  <div class="sections-grid sections-grid--3">
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Supply Requests</h2>
+        <p>Request medicines from suppliers</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/create_request.html">Create a Supply Request <span class="action-link__arrow">&#8594;</span></a>
+        <p class="section-body__note">Share the Request ID with your supplier so they can fulfil the delivery.</p>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Stock Monitoring</h2>
+        <p>View current inventory and expiry flags</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/view_stock.html">View My Stock <span class="action-link__arrow">&#8594;</span></a>
+        <p class="section-body__note">Batches expiring within 90 days or already expired are flagged for your attention.</p>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Adverse Drug Reactions</h2>
+        <p>Submit patient safety reports to BoMRA</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../facility/report_reaction.html">Submit a Reaction Report <span class="action-link__arrow">&#8594;</span></a>
+        <p class="section-body__note">Your reports help BoMRA identify safety patterns and protect public health.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('facility');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+apiGet('api/facility/get_stock.php').then(data => {
+  if (data.status === 'success' && Array.isArray(data.data)) {
+    const rows = data.data;
+    document.getElementById('stat-total').textContent    = rows.length;
+    document.getElementById('stat-expiring').textContent = rows.filter(r => r.expiry_status === 'expiring_soon').length;
+    document.getElementById('stat-expired').textContent  = rows.filter(r => r.expiry_status === 'expired').length;
+  }
+}).catch(() => {});
+
+apiGet('api/facility/get_requests.php').then(data => {
+  if (data.status !== 'success' || !data.data.length) return;
+  const latest = data.data[0];
+  const status = latest.delivery_status;
+  const label  = status === 'delivered' ? 'Last request delivered' : status === 'shipped' ? 'Supplier confirmed your request' : 'Request pending supplier';
+  const color  = status === 'delivered' ? '#15803d' : status === 'shipped' ? '#1d4ed8' : '#92400e';
+  const bg     = status === 'delivered' ? '#f0fdf4' : status === 'shipped'  ? '#eff6ff' : '#fffbeb';
+  const notice = document.createElement('div');
+  notice.style.cssText = 'background:'+bg+';border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:0.7rem 1.1rem;margin-bottom:1.2rem;font-size:0.85rem;color:'+color+';display:flex;align-items:center;justify-content:space-between;';
+  notice.innerHTML = '<span>'+label+' (Request #'+latest.request_id+')</span>'
+    + '<a href="../facility/create_request.html" style="color:'+color+';font-weight:600;font-size:0.82rem;">View All &#8594;</a>';
+  document.querySelector('main').insertBefore(notice, document.querySelector('.stock-bar'));
+}).catch(()=>{});
+</script>
+</body>
+</html>

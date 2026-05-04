@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoMRA - Inspector Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/bomra.css">
+</head>
+<body>
+<nav class="dash-nav">
+  <div class="dash-nav__brand">BoMRA <span>Botswana Medicines Regulatory Authority</span></div>
+  <div class="dash-nav__right">
+    <span class="dash-nav__welcome" id="welcome-msg">Inspector</span>
+    <button class="dash-nav__logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<main class="dash-main dash-main--sm">
+  <div class="dash-header">
+    <h1>Inspector Dashboard</h1>
+    <p>Schedule inspections, record outcomes and review adverse drug reaction reports</p>
+  </div>
+
+  <div class="stat-row stat-row--3">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Inspections</div>
+      <div class="stat-card__value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card stat-card--green">
+      <div class="stat-card__label">Passed</div>
+      <div class="stat-card__value" id="stat-passed">—</div>
+    </div>
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__label">Scheduled</div>
+      <div class="stat-card__value" id="stat-scheduled">—</div>
+    </div>
+  </div>
+
+  <div class="sections-grid">
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Inspections</h2>
+        <p>Schedule upcoming or record completed inspections</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../inspector/add_inspection.html">Record / Schedule an Inspection <span class="action-link__arrow">&#8594;</span></a>
+        <a class="action-link" href="../inspector/my_inspections.html">View My Inspections <span class="action-link__arrow">&#8594;</span></a>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">
+        <h2>Drug Reaction Reports</h2>
+        <p>Review facility ADR submissions</p>
+      </div>
+      <div class="section-body">
+        <a class="action-link" href="../inspector/view_reactions.html">View Adverse Drug Reaction Reports <span class="action-link__arrow">&#8594;</span></a>
+        <p class="section-body__note">Review reports submitted by facilities to support pharmacovigilance and safety oversight.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent inspections table -->
+  <div class="section-card" style="margin-top:1.25rem;">
+    <div class="section-head section-head--blue">
+      <h2>Recent Inspections</h2>
+      <p>Latest inspection records from your account</p>
+    </div>
+    <div style="padding: 0.25rem 0;">
+      <div id="inspections-empty" style="display:none;padding:1rem 0.8rem;font-size:0.85rem;color:var(--text-light);">No inspections recorded yet.</div>
+      <table id="inspections-table" class="data-table" style="display:none;">
+        <thead>
+          <tr>
+            <th>ID</th><th>Facility</th><th>Status</th><th>Date</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="inspections-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="../js/auth.js"></script>
+<script>
+const user = guardPage('inspector');
+if (user) document.getElementById('welcome-msg').textContent = user.name;
+
+apiGet('api/inspector/get_inspections.php').then(data => {
+  if (data.status === 'success' && Array.isArray(data.data)) {
+    const rows = data.data;
+    document.getElementById('stat-total').textContent     = rows.length;
+    document.getElementById('stat-passed').textContent    = rows.filter(r => r.status === 'passed').length;
+    document.getElementById('stat-scheduled').textContent = rows.filter(r => r.status === 'scheduled').length;
+
+    if (rows.length === 0) {
+      document.getElementById('inspections-empty').style.display = 'block';
+    } else {
+      const table = document.getElementById('inspections-table');
+      table.style.display = 'table';
+      const tbody = document.getElementById('inspections-body');
+      tbody.innerHTML = rows.slice(0, 8).map(r => {
+        const badgeClass = r.status === 'passed'    ? 'badge badge-approved'
+          : r.status === 'failed'    ? 'badge badge-rejected'
+          : r.status === 'scheduled' ? 'badge badge-shipped'  : 'badge badge-pending';
+        const date = r.scheduled_date || r.inspection_date || r.created_at || '—';
+        return `<tr>
+          <td>${r.inspection_id}</td>
+          <td>${r.facility_name || r.facility_id}</td>
+          <td><span class="${badgeClass}">${r.status}</span></td>
+          <td>${date.split('T')[0]}</td>
+          <td>${r.notes || '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}).catch(() => {
+  document.getElementById('inspections-empty').style.display = 'block';
+  document.getElementById('inspections-empty').textContent = 'Could not load inspections.';
+});
+</script>
+</body>
+</html>
